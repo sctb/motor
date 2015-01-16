@@ -626,6 +626,12 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout);
 int close(int fildes);
 
 char *strerror(int errnum);
+
+typedef unsigned int size_t;
+typedef int ssize_t;
+
+ssize_t read(int fildes, void *buf, size_t nbyte);
+ssize_t write(int fildes, const void *buf, size_t nbyte);
 ]]
 function abort(name)
   local e = ffi.string(ffi.C.strerror(ffi.errno()))
@@ -674,6 +680,24 @@ function accept(fd)
   end
   return(s)
 end
+BUFFER_SIZE = 1024
+function receive(fd)
+  local b = ffi["new"]("char[?]", BUFFER_SIZE)
+  local x = ffi.C.read(fd, b, BUFFER_SIZE)
+  if x < 0 then
+    abort()
+  end
+  if x > 0 then
+    return(ffi.string(b))
+  end
+end
+function send(b, fd)
+  local x = ffi.C.write(fd, b, _35(b))
+  if x < 0 then
+    abort()
+  end
+  return(x)
+end
 POLLIN = 1
 POLLOUT = 4
 POLLERR = 8
@@ -685,23 +709,23 @@ function error63(r)
   return(r > 7)
 end
 function enter(f, fd, ...)
-  local _u10 = unstash({...})
-  local vs = cut(_u10, 0)
+  local _u12 = unstash({...})
+  local vs = cut(_u12, 0)
   local p = {fd, apply(bit.bor, vs)}
   add(polls, p)
   threads[fd] = thread(f)
 end
 function leave(fd)
-  polls = keep(function (_u15)
-    local fd1 = _u15[1]
+  polls = keep(function (_u17)
+    local fd1 = _u17[1]
     return(not (fd == fd1))
   end, polls)
   threads[fd] = nil
   return(close(fd))
 end
-function poll(_u17)
-  local fd = _u17[1]
-  local ev = _u17[2]
+function poll(_u19)
+  local fd = _u19[1]
+  local ev = _u19[2]
   local p = ffi["new"]("struct pollfd")
   p.fd = fd
   p.events = ev
@@ -716,9 +740,9 @@ function loop()
       ffi.C.poll(a, n, -1)
       local i = 0
       while i < n do
-        local _u19 = a[i]
-        local fd = _u19.fd
-        local r = _u19.revents
+        local _u21 = a[i]
+        local fd = _u21.fd
+        local r = _u21.revents
         if r > 0 then
           if error63(r) then
             leave(fd)
@@ -738,9 +762,16 @@ function loop()
     end
   end
 end
+function echo(fd)
+  local b = receive(fd)
+  if b then
+    send(b, fd)
+    return(echo(coroutine.yield()))
+  end
+end
 function connect(s)
   local fd = accept(s)
-  print(string(fd))
+  enter(echo, fd, POLLIN)
   return(connect(coroutine.yield()))
 end
 function start(port)
@@ -748,7 +779,7 @@ function start(port)
   enter(connect, s, POLLIN)
   return(loop())
 end
-local _u3 = number(arg[1])
-if _u3 then
-  start(_u3)
+local _u4 = number(arg[1])
+if _u4 then
+  start(_u4)
 end

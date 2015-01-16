@@ -54,6 +54,12 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout);
 int close(int fildes);
 
 char *strerror(int errnum);
+
+typedef unsigned int size_t;
+typedef int ssize_t;
+
+ssize_t read(int fildes, void *buf, size_t nbyte);
+ssize_t write(int fildes, const void *buf, size_t nbyte);
 |)
 
 (define abort (name)
@@ -98,6 +104,22 @@ char *strerror(int errnum);
     (when (< s 0)
       (abort 'accept))
     s))
+
+(define BUFFER_SIZE 1024)
+
+(define receive (fd)
+  (let (b (ffi.new "char[?]" BUFFER_SIZE)
+        x (ffi.C.read fd b BUFFER_SIZE))
+    (when (< x 0)
+      (abort))
+    (when (> x 0)
+      (ffi.string b))))
+
+(define send (b fd)
+  (let (x (ffi.C.write fd b (# b)))
+    (when (< x 0)
+      (abort))
+    x))
 
 (define POLLIN          0x0001)
 (define POLLOUT         0x0004)
