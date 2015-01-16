@@ -559,8 +559,196 @@ end
 function argv()
   return(arg)
 end
+function dead63(c)
+  return(coroutine.status(c) == "dead")
+end
+setenv("resume", {_stash = true, macro = function (...)
+  local args = unstash({...})
+  return(join({{"get", "coroutine", {"quote", "resume"}}}, args))
+end})
+setenv("yield", {_stash = true, macro = function (...)
+  local args = unstash({...})
+  return(join({{"get", "coroutine", {"quote", "yield"}}}, args))
+end})
+function thread(f)
+  return(coroutine.create(f))
+end
 ffi = require("ffi")
 setenv("define-c", {_stash = true, macro = function (x)
   return("|ffi.cdef[[" .. inner(x) .. "]]|")
 end})
-print(string("hi"))
+ffi.cdef[[
+int socket(int domain, int type, int protocol);
+
+typedef int socklen_t;
+
+int bind(
+  int socket,
+  const struct sockaddr *address,
+  socklen_t address_len);
+
+int listen(int socket, int backlog);
+
+int accept(
+  int socket,
+  struct sockaddr *restrict address,
+  socklen_t *restrict address_len);
+
+typedef uint8_t sa_family_t;
+typedef uint16_t in_port_t;
+typedef uint32_t in_addr_t;
+
+struct in_addr {
+  in_addr_t     s_addr;
+};
+
+struct sockaddr_in {
+  uint8_t               sin_len;
+  sa_family_t           sin_family;
+  in_port_t             sin_port;
+  struct in_addr        sin_addr;
+  char                  sin_zero[8];
+};
+
+uint32_t htonl(uint32_t hostlong);
+uint16_t htons(uint16_t hostshort);
+char * inet_ntoa(struct in_addr in);
+
+typedef unsigned int nfds_t;
+
+struct pollfd {
+  int   fd;
+  short events;
+  short revents;
+};
+
+int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+int close(int fildes);
+
+char *strerror(int errnum);
+]]
+function abort(name)
+  local e = ffi.string(ffi.C.strerror(ffi.errno()))
+  error((name or "error") .. ": " .. e)
+end
+PF_INET = 2
+AF_INET = 2
+INADDR_ANY = 0
+SOCK_STREAM = 1
+IPPROTO_TCP = 6
+function socket()
+  local fd = ffi.C.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
+  if fd < 0 then
+    abort("socket")
+  end
+  return(fd)
+end
+function close(fd)
+  if ffi.C.close(fd) < 0 then
+    return(abort("close"))
+  end
+end
+function listen(port)
+  local s = socket()
+  local p = ffi["new"]("struct sockaddr_in[1]")
+  local n = ffi.sizeof("struct sockaddr_in")
+  local a = p[0]
+  a.sin_family = AF_INET
+  a.sin_port = ffi.C.htons(port)
+  a.sin_addr.s_addr = INADDR_ANY
+  local _u7 = ffi.cast("struct sockaddr*", p)
+  local x = ffi.C.bind(s, _u7, n)
+  if x < 0 then
+    abort("bind")
+  end
+  local x = ffi.C.listen(s, 10)
+  if x < 0 then
+    abort("listen")
+  end
+  return(s)
+end
+function accept(fd)
+  local s = ffi.C.accept(fd, nil, nil)
+  if s < 0 then
+    abort("accept")
+  end
+  return(s)
+end
+POLLIN = 1
+POLLOUT = 4
+POLLERR = 8
+POLLHUP = 16
+POLLNVAL = 32
+threads = {}
+polls = {}
+function error63(r)
+  return(r > 7)
+end
+function enter(f, fd, ...)
+  local _u10 = unstash({...})
+  local vs = cut(_u10, 0)
+  local p = {fd, apply(bit.bor, vs)}
+  add(polls, p)
+  threads[fd] = thread(f)
+end
+function leave(fd)
+  polls = keep(function (_u15)
+    local fd1 = _u15[1]
+    return(not (fd == fd1))
+  end, polls)
+  threads[fd] = nil
+  return(close(fd))
+end
+function poll(_u17)
+  local fd = _u17[1]
+  local ev = _u17[2]
+  local p = ffi["new"]("struct pollfd")
+  p.fd = fd
+  p.events = ev
+  return(p)
+end
+function loop()
+  while true do
+    local n = _35(polls)
+    if n > 0 then
+      local s = map(poll, polls)
+      local a = ffi["new"]("struct pollfd[?]", n, s)
+      ffi.C.poll(a, n, -1)
+      local i = 0
+      while i < n do
+        local _u19 = a[i]
+        local fd = _u19.fd
+        local r = _u19.revents
+        if r > 0 then
+          if error63(r) then
+            leave(fd)
+          else
+            local c = threads[fd]
+            local f,e = coroutine.resume(c, fd, r)
+            if not f then
+              print("error:" .. " " .. string(e))
+            end
+            if not f or dead63(c) then
+              leave(fd)
+            end
+          end
+        end
+        i = i + 1
+      end
+    end
+  end
+end
+function connect(s)
+  local fd = accept(s)
+  print(string(fd))
+  return(connect(coroutine.yield()))
+end
+function start(port)
+  local s = listen(port)
+  enter(connect, s, POLLIN)
+  return(loop())
+end
+local _u3 = number(arg[1])
+if _u3 then
+  start(_u3)
+end
