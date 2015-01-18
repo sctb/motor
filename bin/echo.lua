@@ -574,6 +574,7 @@ function thread(f)
   return(coroutine.create(f))
 end
 ffi = require("ffi")
+c = ffi.C
 setenv("define-c", {_stash = true, macro = function (x)
   return("|ffi.cdef[[" .. inner(x) .. "]]|")
 end})
@@ -634,7 +635,7 @@ ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 ]]
 function abort(name)
-  local e = ffi.string(ffi.C.strerror(ffi.errno()))
+  local e = ffi.string(c.strerror(ffi.errno()))
   error((name or "error") .. ": " .. e)
 end
 PF_INET = 2
@@ -643,14 +644,14 @@ INADDR_ANY = 0
 SOCK_STREAM = 1
 IPPROTO_TCP = 6
 function socket()
-  local fd = ffi.C.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
+  local fd = c.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
   if fd < 0 then
     abort("socket")
   end
   return(fd)
 end
 function close(fd)
-  if ffi.C.close(fd) < 0 then
+  if c.close(fd) < 0 then
     return(abort("close"))
   end
 end
@@ -660,21 +661,21 @@ function listen(port)
   local n = ffi.sizeof("struct sockaddr_in")
   local a = p[0]
   a.sin_family = AF_INET
-  a.sin_port = ffi.C.htons(port)
+  a.sin_port = c.htons(port)
   a.sin_addr.s_addr = INADDR_ANY
   local _u7 = ffi.cast("struct sockaddr*", p)
-  local x = ffi.C.bind(s, _u7, n)
+  local x = c.bind(s, _u7, n)
   if x < 0 then
     abort("bind")
   end
-  local x = ffi.C.listen(s, 10)
+  local x = c.listen(s, 10)
   if x < 0 then
     abort("listen")
   end
   return(s)
 end
 function accept(fd)
-  local s = ffi.C.accept(fd, nil, nil)
+  local s = c.accept(fd, nil, nil)
   if s < 0 then
     abort("accept")
   end
@@ -683,7 +684,7 @@ end
 BUFFER_SIZE = 1024
 function receive(fd)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
-  local x = ffi.C.read(fd, b, BUFFER_SIZE)
+  local x = c.read(fd, b, BUFFER_SIZE)
   if x < 0 then
     abort()
   end
@@ -692,7 +693,7 @@ function receive(fd)
   end
 end
 function send(b, fd)
-  local x = ffi.C.write(fd, b, _35(b))
+  local x = c.write(fd, b, _35(b))
   if x < 0 then
     abort()
   end
@@ -731,35 +732,36 @@ function poll(_u19)
   p.events = ev
   return(p)
 end
-function loop()
-  while true do
-    local n = _35(polls)
-    if n > 0 then
-      local s = map(poll, polls)
-      local a = ffi["new"]("struct pollfd[?]", n, s)
-      ffi.C.poll(a, n, -1)
-      local i = 0
-      while i < n do
-        local _u21 = a[i]
-        local fd = _u21.fd
-        local r = _u21.revents
-        if r > 0 then
-          if error63(r) then
-            leave(fd)
-          else
-            local c = threads[fd]
-            local f,e = coroutine.resume(c, fd, r)
-            if not f then
-              print("error:" .. " " .. string(e))
-            end
-            if not f or dead63(c) then
-              leave(fd)
-            end
-          end
+function tick(a, n)
+  local i = 0
+  while i < n do
+    local _u21 = a[i]
+    local fd = _u21.fd
+    local r = _u21.revents
+    if r > 0 then
+      if error63(r) then
+        leave(fd)
+      else
+        local c = threads[fd]
+        local b,e = coroutine.resume(c, fd, r)
+        if not b then
+          print("error:" .. " " .. string(e))
         end
-        i = i + 1
+        if not b or dead63(c) then
+          leave(fd)
+        end
       end
     end
+    i = i + 1
+  end
+end
+function loop()
+  while some63(polls) do
+    local n = _35(polls)
+    local s = map(poll, polls)
+    local a = ffi["new"]("struct pollfd[?]", n, s)
+    c.poll(a, n, -1)
+    tick(a, n)
   end
 end
 function echo(fd)
