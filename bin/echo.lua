@@ -644,14 +644,14 @@ INADDR_ANY = 0
 SOCK_STREAM = 1
 IPPROTO_TCP = 6
 function socket()
-  local fd = c.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
-  if fd < 0 then
+  local s = c.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
+  if s < 0 then
     abort("socket")
   end
-  return(fd)
+  return(s)
 end
-function close(fd)
-  if c.close(fd) < 0 then
+function close(s)
+  if c.close(s) < 0 then
     return(abort("close"))
   end
 end
@@ -663,8 +663,8 @@ function listen(port)
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = INADDR_ANY
-  local _u7 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(s, _u7, n)
+  local _u8 = ffi.cast("struct sockaddr*", p)
+  local x = c.bind(s, _u8, n)
   if x < 0 then
     abort("bind")
   end
@@ -674,17 +674,17 @@ function listen(port)
   end
   return(s)
 end
-function accept(fd)
-  local s = c.accept(fd, nil, nil)
-  if s < 0 then
+function accept(s)
+  local _u10 = c.accept(s, nil, nil)
+  if _u10 < 0 then
     abort("accept")
   end
-  return(s)
+  return(_u10)
 end
 BUFFER_SIZE = 1024
-function receive(fd)
+function receive(s)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
-  local x = c.read(fd, b, BUFFER_SIZE)
+  local x = c.read(s, b, BUFFER_SIZE)
   if x < 0 then
     abort()
   end
@@ -692,8 +692,8 @@ function receive(fd)
     return(ffi.string(b))
   end
 end
-function send(b, fd)
-  local x = c.write(fd, b, _35(b))
+function send(b, s)
+  local x = c.write(s, b, _35(b))
   if x < 0 then
     abort()
   end
@@ -705,50 +705,54 @@ POLLERR = 8
 POLLHUP = 16
 POLLNVAL = 32
 threads = {}
-polls = {}
-function error63(r)
-  return(r > 7)
+function error63(v)
+  return(v > 7)
 end
-function enter(f, fd, ...)
-  local _u12 = unstash({...})
-  local vs = cut(_u12, 0)
-  local p = {fd, apply(bit.bor, vs)}
-  add(polls, p)
-  threads[fd] = thread(f)
+function enter(f, s, ...)
+  local _u14 = unstash({...})
+  local vs = cut(_u14, 0)
+  local v = apply(bit.bor, vs)
+  local t = thread(f)
+  threads[s] = {t, s, v}
 end
-function leave(fd)
-  polls = keep(function (_u17)
-    local fd1 = _u17[1]
-    return(not (fd == fd1))
-  end, polls)
-  threads[fd] = nil
-  return(close(fd))
+function leave(s)
+  threads[s] = nil
+  return(close(s))
 end
-function poll(_u19)
-  local fd = _u19[1]
-  local ev = _u19[2]
-  local p = ffi["new"]("struct pollfd")
-  p.fd = fd
-  p.events = ev
-  return(p)
+function polls()
+  local ps = {}
+  local _u19 = threads
+  local _u1 = nil
+  for _u1 in next, _u19 do
+    local _u21 = _u19[_u1]
+    local t = _u21[1]
+    local s = _u21[2]
+    local v = _u21[3]
+    local p = ffi["new"]("struct pollfd")
+    p.fd = s
+    p.events = v
+    add(ps, p)
+  end
+  return(ps)
 end
 function tick(a, n)
   local i = 0
   while i < n do
-    local _u21 = a[i]
-    local fd = _u21.fd
-    local r = _u21.revents
-    if r > 0 then
-      if error63(r) then
-        leave(fd)
+    local _u23 = a[i]
+    local s = _u23.fd
+    local v = _u23.revents
+    if v > 0 then
+      if error63(v) then
+        leave(s)
       else
-        local c = threads[fd]
-        local b,e = coroutine.resume(c, fd, r)
+        local _u24 = threads[s]
+        local t = _u24[1]
+        local b,e = coroutine.resume(t, s)
         if not b then
           print("error:" .. " " .. string(e))
         end
-        if not b or dead63(c) then
-          leave(fd)
+        if not b or dead63(t) then
+          leave(s)
         end
       end
     end
@@ -756,10 +760,10 @@ function tick(a, n)
   end
 end
 function loop()
-  while some63(polls) do
-    local n = _35(polls)
-    local s = map(poll, polls)
-    local a = ffi["new"]("struct pollfd[?]", n, s)
+  while not empty63(threads) do
+    local p = polls()
+    local n = _35(p)
+    local a = ffi["new"]("struct pollfd[?]", n, p)
     c.poll(a, n, -1)
     tick(a, n)
   end
