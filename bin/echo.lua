@@ -574,7 +574,7 @@ function thread(f)
   return(coroutine.create(f))
 end
 ffi = require("ffi")
-c = ffi.C
+local c = ffi.C
 setenv("define-c", {_stash = true, macro = function (x)
   return("|ffi.cdef[[" .. inner(x) .. "]]|")
 end})
@@ -634,23 +634,23 @@ typedef int ssize_t;
 ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 ]]
-function abort(name)
+local function abort(name)
   local e = ffi.string(c.strerror(ffi.errno()))
   error((name or "error") .. ": " .. e)
 end
-PF_INET = 2
-AF_INET = 2
-INADDR_ANY = 0
-SOCK_STREAM = 1
-IPPROTO_TCP = 6
-function socket()
+local PF_INET = 2
+local AF_INET = 2
+local INADDR_ANY = 0
+local SOCK_STREAM = 1
+local IPPROTO_TCP = 6
+local function socket()
   local s = c.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
   if s < 0 then
     abort("socket")
   end
   return(s)
 end
-function close(s)
+local function close(s)
   if c.close(s) < 0 then
     return(abort("close"))
   end
@@ -681,7 +681,7 @@ function accept(s)
   end
   return(_u10)
 end
-BUFFER_SIZE = 1024
+local BUFFER_SIZE = 1024
 function receive(s)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
   local x = c.read(s, b, BUFFER_SIZE)
@@ -699,13 +699,13 @@ function send(b, s)
   end
   return(x)
 end
-POLLIN = 1
-POLLOUT = 4
-POLLERR = 8
-POLLHUP = 16
-POLLNVAL = 32
-threads = {}
-function error63(v)
+local POLLIN = 1
+local POLLOUT = 4
+local POLLERR = 8
+local POLLHUP = 16
+local POLLNVAL = 32
+local threads = {}
+local function error63(v)
   return(v > 7)
 end
 function enter(f, s, ...)
@@ -715,17 +715,17 @@ function enter(f, s, ...)
   local t = thread(f)
   threads[s] = {t, s, v}
 end
-function leave(s)
+local function leave(s)
   threads[s] = nil
   return(close(s))
 end
-function go(t, x)
+local function go(t, x)
   local b,e = coroutine.resume(t, x)
   if not b then
     return(print("error:" .. " " .. string(e)))
   end
 end
-function polls()
+local function polls()
   local ps = {}
   local _u20 = threads
   local _u1 = nil
@@ -741,7 +741,7 @@ function polls()
   end
   return(ps)
 end
-function tick(a, n)
+local function tick(a, n)
   local i = 0
   while i < n do
     local _u24 = a[i]

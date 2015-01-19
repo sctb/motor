@@ -1,7 +1,7 @@
 ;; -*- mode: lisp -*-
 
 (define ffi (require 'ffi))
-(define c ffi.C)
+(define-local c ffi.C)
 
 (define-macro define-c (x)
   (cat "|ffi.cdef[[" (inner x) "]]|"))
@@ -63,23 +63,23 @@ ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 |)
 
-(define abort (name)
+(define-local abort (name)
   (let (e (ffi.string (c.strerror (ffi.errno))))
     (error (cat (or name 'error) ": " e))))
 
-(define PF_INET 2)
-(define AF_INET 2)
-(define INADDR_ANY 0)
-(define SOCK_STREAM 1)
-(define IPPROTO_TCP 6)
+(define-local PF_INET 2)
+(define-local AF_INET 2)
+(define-local INADDR_ANY 0)
+(define-local SOCK_STREAM 1)
+(define-local IPPROTO_TCP 6)
 
-(define socket ()
+(define-local socket ()
   (let (s (c.socket PF_INET SOCK_STREAM IPPROTO_TCP))
     (when (< s 0)
       (abort 'socket))
     s))
 
-(define close (s)
+(define-local close (s)
   (when (< (c.close s) 0)
     (abort 'close)))
 
@@ -106,7 +106,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (abort 'accept))
     s))
 
-(define BUFFER_SIZE 1024)
+(define-local BUFFER_SIZE 1024)
 
 (define receive (s)
   (let (b (ffi.new "char[?]" BUFFER_SIZE)
@@ -122,15 +122,15 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (abort))
     x))
 
-(define POLLIN          0x0001)
-(define POLLOUT         0x0004)
-(define POLLERR         0x0008)
-(define POLLHUP         0x0010)
-(define POLLNVAL        0x0020)
+(define-local POLLIN          0x0001)
+(define-local POLLOUT         0x0004)
+(define-local POLLERR         0x0008)
+(define-local POLLHUP         0x0010)
+(define-local POLLNVAL        0x0020)
 
-(define threads (obj))
+(define-local threads (obj))
 
-(define error? (v)
+(define-local error? (v)
   (> v 0x0007))
 
 (define enter (f s rest: vs)
@@ -138,16 +138,16 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
         t (thread f))
     (set (get threads s) (list t s v))))
 
-(define leave (s)
+(define-local leave (s)
   (set (get threads s) nil)
   (close s))
 
-(define go (t x)
+(define-local go (t x)
   (let (|b,e| (resume t x))
     (unless b
       (pr "error:" e))))
 
-(define polls ()
+(define-local polls ()
   (let (ps ())
     (each (_ (t s v)) threads
       (let (p (ffi.new "struct pollfd"))
@@ -156,7 +156,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
         (add ps p)))
     ps))
 
-(define tick (a n)
+(define-local tick (a n)
   (for (i n)
     (let ((fd: s revents: v) (get a i)
           (t) (get threads s))
