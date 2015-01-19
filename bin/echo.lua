@@ -719,15 +719,21 @@ function leave(s)
   threads[s] = nil
   return(close(s))
 end
+function go(t, x)
+  local b,e = coroutine.resume(t, x)
+  if not b then
+    return(print("error:" .. " " .. string(e)))
+  end
+end
 function polls()
   local ps = {}
-  local _u19 = threads
+  local _u20 = threads
   local _u1 = nil
-  for _u1 in next, _u19 do
-    local _u21 = _u19[_u1]
-    local t = _u21[1]
-    local s = _u21[2]
-    local v = _u21[3]
+  for _u1 in next, _u20 do
+    local _u22 = _u20[_u1]
+    local t = _u22[1]
+    local s = _u22[2]
+    local v = _u22[3]
     local p = ffi["new"]("struct pollfd")
     p.fd = s
     p.events = v
@@ -738,22 +744,16 @@ end
 function tick(a, n)
   local i = 0
   while i < n do
-    local _u23 = a[i]
-    local s = _u23.fd
-    local v = _u23.revents
-    if v > 0 then
-      if error63(v) then
-        leave(s)
-      else
-        local _u24 = threads[s]
-        local t = _u24[1]
-        local b,e = coroutine.resume(t, s)
-        if not b then
-          print("error:" .. " " .. string(e))
-        end
-        if not b or dead63(t) then
-          leave(s)
-        end
+    local _u24 = a[i]
+    local s = _u24.fd
+    local v = _u24.revents
+    local _u25 = threads[s]
+    local t = _u25[1]
+    if dead63(t) or error63(v) then
+      leave(s)
+    else
+      if v > 0 then
+        go(t, s)
       end
     end
     i = i + 1

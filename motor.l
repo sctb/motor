@@ -142,6 +142,11 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (set (get threads s) nil)
   (close s))
 
+(define go (t x)
+  (let (|b,e| (resume t x))
+    (unless b
+      (pr "error:" e))))
+
 (define polls ()
   (let (ps ())
     (each (_ (t s v)) threads
@@ -153,14 +158,11 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define tick (a n)
   (for (i n)
-    (let ((fd: s revents: v) (get a i))
-      (when (> v 0)
-        (if (error? v) (leave s)
-          (let ((t) (get threads s) |b,e| (resume t s))
-            (unless b
-              (pr "error:" e))
-            (when (or (not b) (dead? t))
-              (leave s))))))))
+    (let ((fd: s revents: v) (get a i)
+          (t) (get threads s))
+      (if (or (dead? t) (error? v))
+          (leave s)
+          (> v 0) (go t s)))))
 
 (define loop ()
   (while (not (empty? threads))
