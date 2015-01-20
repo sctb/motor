@@ -194,7 +194,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (set x.events v))
   (yield))
 
-(define-local BUFFER_SIZE 1024)
+(define-local BUFFER_SIZE 2048)
 
 (define receive (s)
   (wait s POLLIN)
