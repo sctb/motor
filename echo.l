@@ -1,20 +1,14 @@
 ;; -*- mode: lisp -*-
 
-(define echo (fd)
-  (let (b (receive fd))
-    (when b
-      (send b fd)
-      (echo (yield)))))
-
 (define connect (s)
-  (let (fd (accept s))
-    (enter echo fd POLLIN))
-  (connect (yield)))
+  (let (b (receive s))
+    (while b
+      (send s b)
+      (set b (receive s)))))
 
 (define start (port)
-  (let (s (listen port))
-    (enter connect s POLLIN)
-    (loop)))
+  (listen port connect)
+  (loop))
 
 (let (port (number (at arg 0)))
   (when port (start port)))

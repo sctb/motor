@@ -655,7 +655,7 @@ local function close(s)
     return(abort("close"))
   end
 end
-function listen(port)
+local function bind(port)
   local s = socket()
   local p = ffi["new"]("struct sockaddr_in[1]")
   local n = ffi.sizeof("struct sockaddr_in")
@@ -663,8 +663,8 @@ function listen(port)
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = INADDR_ANY
-  local _u8 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(s, _u8, n)
+  local _u9 = ffi.cast("struct sockaddr*", p)
+  local x = c.bind(s, _u9, n)
   if x < 0 then
     abort("bind")
   end
@@ -674,31 +674,7 @@ function listen(port)
   end
   return(s)
 end
-function accept(s)
-  local _u10 = c.accept(s, nil, nil)
-  if _u10 < 0 then
-    abort("accept")
-  end
-  return(_u10)
-end
-local BUFFER_SIZE = 1024
-function receive(s)
-  local b = ffi["new"]("char[?]", BUFFER_SIZE)
-  local x = c.read(s, b, BUFFER_SIZE)
-  if x < 0 then
-    abort()
-  end
-  if x > 0 then
-    return(ffi.string(b))
-  end
-end
-function send(b, s)
-  local x = c.write(s, b, _35(b))
-  if x < 0 then
-    abort()
-  end
-  return(x)
-end
+local POLLNONE = 0
 local POLLIN = 1
 local POLLOUT = 4
 local POLLERR = 8
@@ -708,18 +684,17 @@ local threads = {}
 local function error63(v)
   return(v > 7)
 end
-function enter(f, s, ...)
-  local _u14 = unstash({...})
-  local vs = cut(_u14, 0)
+local function enter(s, t, ...)
+  local _u11 = unstash({...})
+  local vs = cut(_u11, 0)
   local v = apply(bit.bor, vs)
-  local t = thread(f)
-  threads[s] = {t, s, v}
+  threads[s] = {t, v, s}
 end
 local function leave(s)
   threads[s] = nil
   return(close(s))
 end
-local function go(t, x)
+local function run(t, x)
   local b,e = coroutine.resume(t, x)
   if not b then
     return(print("error:" .. " " .. string(e)))
@@ -727,13 +702,13 @@ local function go(t, x)
 end
 local function polls()
   local ps = {}
-  local _u20 = threads
+  local _u17 = threads
   local _u1 = nil
-  for _u1 in next, _u20 do
-    local _u22 = _u20[_u1]
-    local t = _u22[1]
-    local s = _u22[2]
-    local v = _u22[3]
+  for _u1 in next, _u17 do
+    local _u19 = _u17[_u1]
+    local t = _u19[1]
+    local v = _u19[2]
+    local s = _u19[3]
     local p = ffi["new"]("struct pollfd")
     p.fd = s
     p.events = v
@@ -744,19 +719,33 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u24 = a[i]
-    local s = _u24.fd
-    local v = _u24.revents
-    local _u25 = threads[s]
-    local t = _u25[1]
-    if dead63(t) or error63(v) then
+    local _u21 = a[i]
+    local s = _u21.fd
+    local r = _u21.revents
+    local _u22 = threads[s]
+    local t = _u22[1]
+    local v = _u22[2]
+    if dead63(t) or error63(r) then
       leave(s)
     else
-      if v > 0 then
-        go(t, s)
+      if v == POLLNONE or r > 0 then
+        run(t, s)
       end
     end
     i = i + 1
+  end
+end
+local IMMEDIATE = 0
+local NEVER = -1
+function timeout()
+  if find(function (_u25)
+    local _u2 = _u25[1]
+    local v = _u25[2]
+    return(v == POLLNONE)
+  end, threads) then
+    return(IMMEDIATE)
+  else
+    return(NEVER)
   end
 end
 function loop()
@@ -764,28 +753,67 @@ function loop()
     local p = polls()
     local n = _35(p)
     local a = ffi["new"]("struct pollfd[?]", n, p)
-    c.poll(a, n, -1)
+    local t = timeout(p)
+    c.poll(a, n, t)
     tick(a, n)
   end
 end
-function echo(fd)
-  local b = receive(fd)
-  if b then
-    send(b, fd)
-    return(echo(coroutine.yield()))
+local function accept(s)
+  local _u28 = c.accept(s, nil, nil)
+  if _u28 < 0 then
+    abort("accept")
+  end
+  return(_u28)
+end
+function listen(port, f)
+  local function connect(s)
+    local _u31 = accept(s)
+    local t = thread(f)
+    enter(_u31, t, POLLNONE)
+    return(connect(coroutine.yield()))
+  end
+  local s = bind(port)
+  local t = thread(connect)
+  return(enter(s, t, POLLIN))
+end
+local function wait(s, v)
+  local x = threads[s]
+  x[2] = v
+  return(coroutine.yield())
+end
+local BUFFER_SIZE = 1024
+function receive(s)
+  wait(s, POLLIN)
+  local b = ffi["new"]("char[?]", BUFFER_SIZE)
+  local x = c.read(s, b, BUFFER_SIZE)
+  if x < 0 then
+    abort()
+  end
+  if x > 0 then
+    return(ffi.string(b))
   end
 end
+function send(s, b)
+  wait(s, POLLOUT)
+  local x = c.write(s, b, _35(b))
+  if x < 0 then
+    abort()
+  end
+  return(x)
+end
 function connect(s)
-  local fd = accept(s)
-  enter(echo, fd, POLLIN)
-  return(connect(coroutine.yield()))
+  local b = receive(s)
+  while b do
+    send(s, b)
+    b = receive(s)
+  end
+  return(print(string("bye!")))
 end
 function start(port)
-  local s = listen(port)
-  enter(connect, s, POLLIN)
+  listen(port, connect)
   return(loop())
 end
-local _u4 = number(arg[1])
-if _u4 then
-  start(_u4)
+local _u3 = number(arg[1])
+if _u3 then
+  start(_u3)
 end
