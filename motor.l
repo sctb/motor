@@ -200,10 +200,8 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (wait s POLLIN)
   (let (b (ffi.new "char[?]" BUFFER_SIZE)
         x (c.read s b BUFFER_SIZE))
-    (when (< x 0)
-      (abort))
-    (when (> x 0)
-      (ffi.string b))))
+    (if (< x 0) (abort)
+        (> x 0) (ffi.string b))))
 
 (define send (s b)
   (let (i 0 n (# b)
