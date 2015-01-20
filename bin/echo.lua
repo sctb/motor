@@ -663,8 +663,8 @@ local function bind(port)
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = INADDR_ANY
-  local _u9 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(s, _u9, n)
+  local _u8 = ffi.cast("struct sockaddr*", p)
+  local x = c.bind(s, _u8, n)
   if x < 0 then
     abort("bind")
   end
@@ -685,10 +685,11 @@ local function error63(v)
   return(v > 7)
 end
 local function enter(s, t, ...)
-  local _u11 = unstash({...})
-  local vs = cut(_u11, 0)
+  local _u10 = unstash({...})
+  local vs = cut(_u10, 0)
   local v = apply(bit.bor, vs)
-  threads[s] = {t, v, s}
+  local x = {thread = t, events = v, stream = s}
+  threads[s] = x
 end
 local function leave(s)
   threads[s] = nil
@@ -705,16 +706,13 @@ local function run(t, s)
 end
 local function polls()
   local ps = {}
-  local _u17 = threads
+  local _u15 = threads
   local _u1 = nil
-  for _u1 in next, _u17 do
-    local _u19 = _u17[_u1]
-    local t = _u19[1]
-    local v = _u19[2]
-    local s = _u19[3]
+  for _u1 in next, _u15 do
+    local x = _u15[_u1]
     local p = ffi["new"]("struct pollfd")
-    p.fd = s
-    p.events = v
+    p.fd = x.stream
+    p.events = x.events
     add(ps, p)
   end
   return(ps)
@@ -722,12 +720,12 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u21 = a[i]
-    local s = _u21.fd
-    local r = _u21.revents
-    local _u22 = threads[s]
-    local t = _u22[1]
-    local v = _u22[2]
+    local _u18 = a[i]
+    local s = _u18.fd
+    local r = _u18.revents
+    local _u19 = threads[s]
+    local v = _u19.events
+    local t = _u19.thread
     if dead63(t) or error63(r) then
       leave(s)
     else
@@ -741,10 +739,8 @@ end
 local IMMEDIATE = 0
 local NEVER = -1
 function timeout()
-  if find(function (_u25)
-    local _u2 = _u25[1]
-    local v = _u25[2]
-    return(v == POLLNONE)
+  if find(function (x)
+    return(x.events == POLLNONE)
   end, threads) then
     return(IMMEDIATE)
   else
@@ -762,17 +758,17 @@ function loop()
   end
 end
 local function accept(s)
-  local _u28 = c.accept(s, nil, nil)
-  if _u28 < 0 then
+  local _u24 = c.accept(s, nil, nil)
+  if _u24 < 0 then
     abort("accept")
   end
-  return(_u28)
+  return(_u24)
 end
 function listen(port, f)
   local function connect(s)
-    local _u31 = accept(s)
+    local _u27 = accept(s)
     local t = thread(f)
-    enter(_u31, t, POLLNONE)
+    enter(_u27, t, POLLNONE)
     return(connect(coroutine.yield()))
   end
   local s = bind(port)
@@ -781,7 +777,7 @@ function listen(port, f)
 end
 local function wait(s, v)
   local x = threads[s]
-  x[2] = v
+  x.events = v
   return(coroutine.yield())
 end
 local BUFFER_SIZE = 1024

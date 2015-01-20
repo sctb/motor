@@ -113,8 +113,11 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (> v 0x0007))
 
 (define-local enter (s t rest: vs)
-  (let (v (apply bit.bor vs))
-    (set (get threads s) (list t v s))))
+  (let (v (apply bit.bor vs)
+        x (obj thread: t
+               events: v
+               stream: s))
+    (set (get threads s) x)))
 
 (define-local leave (s)
   (set (get threads s) nil)
@@ -129,17 +132,17 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define-local polls ()
   (let (ps ())
-    (each (_ (t v s)) threads
+    (each (_ x) threads
       (let (p (ffi.new "struct pollfd"))
-        (set p.fd s)
-        (set p.events v)
+        (set p.fd x.stream)
+        (set p.events x.events)
         (add ps p)))
     ps))
 
 (define-local tick (a n)
   (for (i n)
     (let ((fd: s revents: r) (get a i)
-          (t v) (get threads s))
+          (thread: t events: v) (get threads s))
       (if (or (dead? t) (error? r))
           (leave s)
           (or (= v POLLNONE) (> r 0))
@@ -149,7 +152,9 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define-local NEVER -1)
 
 (define timeout ()
-  (if (find (fn ((_ v)) (= v POLLNONE)) threads)
+  (if (find (fn (x)
+              (= x.events POLLNONE))
+            threads)
       IMMEDIATE
     NEVER))
 
@@ -181,7 +186,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define-local wait (s v)
   (let (x (get threads s))
-    (set (at x 1) v)
+    (set x.events v)
     (yield)))
 
 (define-local BUFFER_SIZE 1024)
