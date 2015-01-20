@@ -186,8 +186,8 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define-local wait (s v)
   (let (x (get threads s))
-    (set x.events v)
-    (yield)))
+    (set x.events v))
+  (yield))
 
 (define-local BUFFER_SIZE 1024)
 
