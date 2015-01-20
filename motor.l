@@ -120,10 +120,12 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (set (get threads s) nil)
   (close s))
 
-(define-local run (t x)
-  (let (|b,e| (resume t x))
+(define-local run (t s)
+  (let (|b,e| (resume t s))
     (unless b
-      (pr "error:" e))))
+      (pr "error:" e))
+    (when (dead? t)
+      (leave s))))
 
 (define-local polls ()
   (let (ps ())

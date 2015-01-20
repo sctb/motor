@@ -694,10 +694,13 @@ local function leave(s)
   threads[s] = nil
   return(close(s))
 end
-local function run(t, x)
-  local b,e = coroutine.resume(t, x)
+local function run(t, s)
+  local b,e = coroutine.resume(t, s)
   if not b then
-    return(print("error:" .. " " .. string(e)))
+    print("error:" .. " " .. string(e))
+  end
+  if dead63(t) then
+    return(leave(s))
   end
 end
 local function polls()
@@ -807,7 +810,6 @@ function connect(s)
     send(s, b)
     b = receive(s)
   end
-  return(print(string("bye!")))
 end
 function start(port)
   listen(port, connect)
