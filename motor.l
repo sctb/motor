@@ -8,6 +8,7 @@
 
 (define-c |
 int socket(int domain, int type, int protocol);
+int fcntl(int fildes, int cmd, ...);
 
 typedef int socklen_t;
 
@@ -167,10 +168,14 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (c.poll a n t)
       (tick a n))))
 
+(define-local F_SETFL 4)
+(define-local O_NONBLOCK 0x0004)
+
 (define-local accept (s)
   (let (s (c.accept s nil nil))
     (when (< s 0)
       (abort 'accept))
+    (c.fcntl s F_SETFL O_NONBLOCK)
     s))
 
 (define listen (port f)
@@ -201,8 +206,11 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (ffi.string b))))
 
 (define send (s b)
-  (wait s POLLOUT)
-  (let (x (c.write s b (# b)))
-    (when (< x 0)
-      (abort))
-    x))
+  (let (i 0 n (# b)
+        b (ffi.cast "const char*" b))
+    (while (< i n)
+      (wait s POLLOUT)
+      (let (x (c.write s (+ b i) (- n i)))
+        (when (< x 0)
+          (abort))
+        (inc i x)))))

@@ -580,6 +580,7 @@ setenv("define-c", {_stash = true, macro = function (x)
 end})
 ffi.cdef[[
 int socket(int domain, int type, int protocol);
+int fcntl(int fildes, int cmd, ...);
 
 typedef int socklen_t;
 
@@ -757,11 +758,14 @@ function loop()
     tick(a, n)
   end
 end
+local F_SETFL = 4
+local O_NONBLOCK = 4
 local function accept(s)
   local _u24 = c.accept(s, nil, nil)
   if _u24 < 0 then
     abort("accept")
   end
+  c.fcntl(_u24, F_SETFL, O_NONBLOCK)
   return(_u24)
 end
 function listen(port, f)
@@ -793,12 +797,17 @@ function receive(s)
   end
 end
 function send(s, b)
-  wait(s, POLLOUT)
-  local x = c.write(s, b, _35(b))
-  if x < 0 then
-    abort()
+  local i = 0
+  local n = _35(b)
+  local _u31 = ffi.cast("const char*", b)
+  while i < n do
+    wait(s, POLLOUT)
+    local x = c.write(s, _u31 + i, n - i)
+    if x < 0 then
+      abort()
+    end
+    i = i + x
   end
-  return(x)
 end
 function connect(s)
   local b = receive(s)
