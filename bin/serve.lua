@@ -52,30 +52,30 @@ end
 function cut(x, from, upto)
   local l = {}
   local j = 0
-  local _u126
+  local _u124
   if nil63(from) or from < 0 then
-    _u126 = 0
+    _u124 = 0
   else
-    _u126 = from
+    _u124 = from
   end
-  local i = _u126
+  local i = _u124
   local n = _35(x)
-  local _u127
+  local _u125
   if nil63(upto) or upto > n then
-    _u127 = n
+    _u125 = n
   else
-    _u127 = upto
+    _u125 = upto
   end
-  local _u24 = _u127
-  while i < _u24 do
+  local _u25 = _u125
+  while i < _u25 do
     l[j + 1] = x[i + 1]
     i = i + 1
     j = j + 1
   end
-  local _u25 = x
+  local _u26 = x
   local k = nil
-  for k in next, _u25 do
-    local v = _u25[k]
+  for k in next, _u26 do
+    local v = _u26[k]
     if not number63(k) then
       l[k] = v
     end
@@ -84,10 +84,10 @@ function cut(x, from, upto)
 end
 function keys(x)
   local t = {}
-  local _u28 = x
+  local _u29 = x
   local k = nil
-  for k in next, _u28 do
-    local v = _u28[k]
+  for k in next, _u29 do
+    local v = _u29[k]
     if not number63(k) then
       t[k] = v
     end
@@ -107,11 +107,11 @@ function char(s, n)
   return(clip(s, n, n + 1))
 end
 function code(s, n)
-  local _u128
+  local _u126
   if n then
-    _u128 = n + 1
+    _u126 = n + 1
   end
-  return(strlib.byte(s, _u128))
+  return(strlib.byte(s, _u126))
 end
 function string_literal63(x)
   return(string63(x) and char(x, 0) == "\"")
@@ -144,16 +144,16 @@ function join(a, b)
   if a and b then
     local c = {}
     local o = _35(a)
-    local _u43 = a
+    local _u44 = a
     local k = nil
-    for k in next, _u43 do
-      local v = _u43[k]
+    for k in next, _u44 do
+      local v = _u44[k]
       c[k] = v
     end
-    local _u45 = b
+    local _u46 = b
     local k = nil
-    for k in next, _u45 do
-      local v = _u45[k]
+    for k in next, _u46 do
+      local v = _u46[k]
       if number63(k) then
         k = k + o
       end
@@ -176,19 +176,19 @@ function reduce(f, x)
   end
 end
 function find(f, t)
-  local _u49 = t
+  local _u50 = t
   local _u1 = nil
-  for _u1 in next, _u49 do
-    local x = _u49[_u1]
-    local _u51 = f(x)
-    if _u51 then
-      return(_u51)
+  for _u1 in next, _u50 do
+    local x = _u50[_u1]
+    local _u52 = f(x)
+    if _u52 then
+      return(_u52)
     end
   end
 end
 function first(f, l)
-  local i = 0
   local n = _35(l)
+  local i = 0
   while i < n do
     local x = f(l[i + 1])
     if x then
@@ -215,29 +215,26 @@ function sort(l, f)
   table.sort(l, f)
   return(l)
 end
-function iterate(f, count)
-  local i = 0
-  while i < count do
-    f(i)
-    i = i + 1
-  end
-end
 function replicate(n, x)
   local l = {}
-  iterate(function ()
-    return(add(l, x))
-  end, n)
+  local _u2 = 0
+  while _u2 < n do
+    add(l, x)
+    _u2 = _u2 + 1
+  end
   return(l)
 end
 function step(f, l)
-  return(iterate(function (i)
-    return(f(l[i + 1]))
-  end, _35(l)))
+  local i = 0
+  while i < _35(l) do
+    f(l[i + 1])
+    i = i + 1
+  end
 end
 function map(f, x)
   local t = {}
-  local i = 0
   local n = _35(x)
+  local i = 0
   while i < n do
     local y = f(x[i + 1])
     if is63(y) then
@@ -245,10 +242,10 @@ function map(f, x)
     end
     i = i + 1
   end
-  local _u64 = x
+  local _u62 = x
   local k = nil
-  for k in next, _u64 do
-    local v = _u64[k]
+  for k in next, _u62 do
+    local v = _u62[k]
     if not number63(k) then
       local y = f(v)
       if is63(y) then
@@ -266,10 +263,10 @@ function keep(f, x)
   end, x))
 end
 function keys63(t)
-  local _u69 = t
+  local _u67 = t
   local k = nil
-  for k in next, _u69 do
-    local _u2 = _u69[k]
+  for k in next, _u67 do
+    local _u3 = _u67[k]
     if not number63(k) then
       return(true)
     end
@@ -277,10 +274,10 @@ function keys63(t)
   return(false)
 end
 function empty63(t)
-  local _u72 = t
-  local _u3 = nil
-  for _u3 in next, _u72 do
-    local _u4 = _u72[_u3]
+  local _u70 = t
+  local _u4 = nil
+  for _u4 in next, _u70 do
+    local _u5 = _u70[_u4]
     return(false)
   end
   return(true)
@@ -288,10 +285,10 @@ end
 function stash(args)
   if keys63(args) then
     local p = {}
-    local _u75 = args
+    local _u73 = args
     local k = nil
-    for k in next, _u75 do
-      local v = _u75[k]
+    for k in next, _u73 do
+      local v = _u73[k]
       if not number63(k) then
         p[k] = v
       end
@@ -308,10 +305,10 @@ function unstash(args)
     local l = last(args)
     if obj63(l) and l._stash then
       local args1 = butlast(args)
-      local _u78 = l
+      local _u76 = l
       local k = nil
-      for k in next, _u78 do
-        local v = _u78[k]
+      for k in next, _u76 do
+        local v = _u76[k]
         if not (k == "_stash") then
           args1[k] = v
         end
@@ -323,12 +320,12 @@ function unstash(args)
   end
 end
 function search(s, pattern, start)
-  local _u129
+  local _u127
   if start then
-    _u129 = start + 1
+    _u127 = start + 1
   end
-  local _u81 = _u129
-  local i = strlib.find(s, pattern, _u81, true)
+  local _u79 = _u127
+  local i = strlib.find(s, pattern, _u79, true)
   return(i and i - 1)
 end
 function split(s, sep)
@@ -336,13 +333,14 @@ function split(s, sep)
     return({})
   else
     local l = {}
+    local n = _35(sep)
     while true do
       local i = search(s, sep)
       if nil63(i) then
         break
       else
         add(l, clip(s, 0, i))
-        s = clip(s, i + 1)
+        s = clip(s, i + n)
       end
     end
     add(l, s)
@@ -411,8 +409,8 @@ function number_code63(n)
   return(n > 47 and n < 58)
 end
 function numeric63(s)
-  local i = 0
   local n = _35(s)
+  local i = 0
   while i < n do
     if not number_code63(code(s, i)) then
       return(false)
@@ -455,10 +453,10 @@ function string(x, depth)
                   local xs = {}
                   local ks = {}
                   local d = (depth or 0) + 1
-                  local _u104 = x
+                  local _u102 = x
                   local k = nil
-                  for k in next, _u104 do
-                    local v = _u104[k]
+                  for k in next, _u102 do
+                    local v = _u102[k]
                     if number63(k) then
                       xs[k] = string(v, d)
                     else
@@ -466,10 +464,10 @@ function string(x, depth)
                       add(ks, string(v, d))
                     end
                   end
-                  local _u106 = join(xs, ks)
-                  local _u5 = nil
-                  for _u5 in next, _u106 do
-                    local v = _u106[_u5]
+                  local _u104 = join(xs, ks)
+                  local _u6 = nil
+                  for _u6 in next, _u104 do
+                    local v = _u104[_u6]
                     s = s .. sp .. v
                     sp = " "
                   end
@@ -503,13 +501,13 @@ function space(xs)
   end
 end
 function apply(f, args)
-  local _u115 = stash(args)
-  return(f(unpack(_u115)))
+  local _u113 = stash(args)
+  return(f(unpack(_u113)))
 end
-local _u116 = 0
+local _u114 = 0
 function unique()
-  _u116 = _u116 + 1
-  return("_u" .. _u116)
+  _u114 = _u114 + 1
+  return("_u" .. _u114)
 end
 function unique63(id)
   return("_u" == clip(id, 0, 2))
@@ -522,22 +520,22 @@ function toplevel63()
   return(one63(environment))
 end
 function setenv(k, ...)
-  local _u121 = unstash({...})
-  local keys = cut(_u121, 0)
+  local _u119 = unstash({...})
+  local keys = cut(_u119, 0)
   if string63(k) then
-    local _u130
+    local _u128
     if keys.toplevel then
-      _u130 = hd(environment)
+      _u128 = hd(environment)
     else
-      _u130 = last(environment)
+      _u128 = last(environment)
     end
-    local frame = _u130
+    local frame = _u128
     local entry = frame[k] or {}
-    local _u123 = keys
-    local _u125 = nil
-    for _u125 in next, _u123 do
-      local v = _u123[_u125]
-      entry[_u125] = v
+    local _u121 = keys
+    local _u123 = nil
+    for _u123 in next, _u121 do
+      local v = _u121[_u123]
+      entry[_u123] = v
     end
     frame[k] = entry
   end
@@ -811,12 +809,37 @@ local sep2 = sep .. sep
 local function words(x)
   return(split(x, " "))
 end
+local function cleave(x, sep)
+  local n = search(x, sep)
+  if nil63(n) then
+    return(x)
+  else
+    return({clip(x, 0, n), clip(x, n + _35(sep))})
+  end
+end
 function start(s)
-  local _u3 = words(line(s, sep))
-  local m = _u3[1]
-  local p = _u3[2]
-  local v = _u3[3]
+  local _u6 = words(line(s, sep))
+  local m = _u6[1]
+  local p = _u6[2]
+  local v = _u6[3]
   return({path = p, method = m, version = v})
+end
+function headers(s)
+  local x = {}
+  local b = line(s, sep2)
+  local _u8 = split(b, sep)
+  local _u1 = nil
+  for _u1 in next, _u8 do
+    local l = _u8[_u1]
+    local _u10 = cleave(l, ": ")
+    local k = _u10[1]
+    local v = _u10[2]
+    x[k] = v
+  end
+  return(x)
+end
+function body(s, n)
+  return(amount(s, n))
 end
 local function response(data, code)
   return("HTTP/1.1 " .. code .. sep .. "Content-Length: " .. _35(data) .. sep2 .. data)
@@ -850,7 +873,7 @@ end
 function before(s, pat)
   local i = nil
   while nil63(i) do
-    local n = search(s.buffer, pat)
+    local n = search(s.buffer, pat, s.pos)
     if nil63(n) then
       if not fill(s) then
         i = -1
@@ -860,8 +883,9 @@ function before(s, pat)
     end
   end
   if i >= 0 then
+    local _u4 = s.pos
     s.pos = i
-    return(clip(s.buffer, 0, i))
+    return(clip(s.buffer, _u4, i))
   end
 end
 function line(s, pat)
@@ -870,17 +894,48 @@ function line(s, pat)
   s.pos = s.pos + _35(p)
   return(b)
 end
+function amount(s, n)
+  while _35(s.buffer) - s.pos < n do
+    if not fill(s) then
+      break
+    end
+  end
+  local b = clip(s.buffer, s.pos)
+  s.pos = s.pos + _35(b)
+  return(b)
+end
 function write(s, b)
   return(send(s.fd, b))
 end
 function handle(s)
-  local _u2 = start(s)
-  local path = _u2.path
-  local method = _u2.method
-  local version = _u2.version
-  return(respond(s, method .. " " .. path))
+  local msg = ""
+  local function p(...)
+    local args = unstash({...})
+    msg = msg .. apply(cat, args) .. "\n"
+  end
+  local _u3 = start(s)
+  local path = _u3.path
+  local method = _u3.method
+  local version = _u3.version
+  p("Method: ", method)
+  p("Path: ", path)
+  p("Version: ", version)
+  p("Headers:")
+  local x = headers(s)
+  local _u4 = x
+  local k = nil
+  for k in next, _u4 do
+    local v = _u4[k]
+    p("  ", k, ": ", v)
+  end
+  local n = number(x["Content-Length"])
+  if n then
+    p("Content:")
+    p(body(s, n))
+  end
+  return(respond(s, msg))
 end
-local _u3 = number(arg[1])
-if _u3 then
-  serve(_u3, handle)
+local _u6 = number(arg[1])
+if _u6 then
+  serve(_u6, handle)
 end

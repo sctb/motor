@@ -6,11 +6,28 @@
 (define-local words (x)
   (split x " "))
 
+(define-local cleave (x sep)
+  (let (n (search x sep))
+    (if (nil? n) x
+      (list (clip x 0 n)
+            (clip x (+ n (# sep)))))))
+
 (define start (s)
   (let ((m p v) (words (line s sep)))
     (obj method: m
          path: p
          version: v)))
+
+(define headers (s)
+  (let (x (obj)
+        b (line s sep2))
+    (each (_ l) (split b sep)
+      (let ((k v) (cleave l ": "))
+        (set (get x k) v)))
+    x))
+
+(define body (s n)
+  (amount s n))
 
 (define-local response (data code)
   (cat "HTTP/1.1 " code sep
