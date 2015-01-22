@@ -817,18 +817,3 @@ function serve(port, f)
   listen(port, connect)
   return(loop())
 end
-function connect(s)
-  local b = receive(s)
-  while b do
-    send(s, b)
-    b = receive(s)
-  end
-end
-function start(port)
-  listen(port, connect)
-  return(loop())
-end
-local _u3 = number(arg[1])
-if _u3 then
-  start(_u3)
-end
