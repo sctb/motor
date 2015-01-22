@@ -780,7 +780,7 @@ local function wait(fd, v)
   x.events = v
   return(coroutine.yield())
 end
-local BUFFER_SIZE = 2048
+local BUFFER_SIZE = 1024
 function receive(fd)
   wait(fd, POLLIN)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
@@ -806,10 +806,81 @@ function send(fd, b)
     i = i + x
   end
 end
+local sep = "\r\n"
+local sep2 = sep .. sep
+local function words(x)
+  return(split(x, " "))
+end
+function start(s)
+  local _u3 = words(line(s, sep))
+  local m = _u3[1]
+  local p = _u3[2]
+  local v = _u3[3]
+  return({path = p, method = m, version = v})
+end
+local function response(data, code)
+  return("HTTP/1.1 " .. code .. sep .. "Content-Length: " .. _35(data) .. sep2 .. data)
+end
+function respond(s, data)
+  return(write(s, response(data, "200 OK")))
+end
+function problem(s, data)
+  return(write(s, response(data, "500 Internal Server Error")))
+end
+function unknown(s)
+  return(write(s, response("Unknown", "404 Not Found")))
+end
 function serve(port, f)
-  local function connect(s)
-    return(f(s))
+  local function connect(fd)
+    return(f(stream(fd)))
   end
   listen(port, connect)
   return(loop())
+end
+function stream(fd)
+  return({fd = fd, pos = 0, buffer = ""})
+end
+local function fill(s)
+  local b = receive(s.fd)
+  if b then
+    s.buffer = s.buffer .. b
+    return(true)
+  end
+end
+function before(s, pat)
+  local i = nil
+  while nil63(i) do
+    local n = search(s.buffer, pat)
+    if nil63(n) then
+      if not fill(s) then
+        i = -1
+      end
+    else
+      i = n
+    end
+  end
+  if i >= 0 then
+    s.pos = i
+    return(clip(s.buffer, 0, i))
+  end
+end
+function line(s, pat)
+  local p = pat or "\n"
+  local b = before(s, p)
+  s.pos = s.pos + _35(p)
+  return(b)
+end
+function write(s, b)
+  return(send(s.fd, b))
+end
+function handle(s)
+  local _u2 = start(s)
+  local path = _u2.path
+  local method = _u2.method
+  local version = _u2.version
+  return(respond(s, method .. " " .. path))
+end
+local _u3 = number(arg[1])
+if _u3 then
+  serve(_u3, handle)
 end
