@@ -645,19 +645,19 @@ local INADDR_ANY = 0
 local SOCK_STREAM = 1
 local IPPROTO_TCP = 6
 local function socket()
-  local s = c.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
-  if s < 0 then
+  local fd = c.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
+  if fd < 0 then
     abort("socket")
   end
-  return(s)
+  return(fd)
 end
-local function close(s)
-  if c.close(s) < 0 then
+local function close(fd)
+  if c.close(fd) < 0 then
     return(abort("close"))
   end
 end
 local function bind(port)
-  local s = socket()
+  local fd = socket()
   local p = ffi["new"]("struct sockaddr_in[1]")
   local n = ffi.sizeof("struct sockaddr_in")
   local a = p[0]
@@ -665,15 +665,15 @@ local function bind(port)
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = INADDR_ANY
   local _u8 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(s, _u8, n)
+  local x = c.bind(fd, _u8, n)
   if x < 0 then
     abort("bind")
   end
-  local x = c.listen(s, 10)
+  local x = c.listen(fd, 10)
   if x < 0 then
     abort("listen")
   end
-  return(s)
+  return(fd)
 end
 local POLLNONE = 0
 local POLLIN = 1
@@ -685,24 +685,24 @@ local threads = {}
 local function error63(v)
   return(v > 7)
 end
-local function enter(s, t, ...)
+local function enter(fd, t, ...)
   local _u10 = unstash({...})
   local vs = cut(_u10, 0)
   local v = apply(bit.bor, vs)
-  local x = {thread = t, events = v, stream = s}
-  threads[s] = x
+  local x = {fd = fd, thread = t, events = v}
+  threads[fd] = x
 end
-local function leave(s)
-  threads[s] = nil
-  return(close(s))
+local function leave(fd)
+  threads[fd] = nil
+  return(close(fd))
 end
-local function run(t, s)
-  local b,e = coroutine.resume(t, s)
+local function run(t, fd)
+  local b,e = coroutine.resume(t, fd)
   if not b then
     print("error:" .. " " .. string(e))
   end
   if dead63(t) then
-    return(leave(s))
+    return(leave(fd))
   end
 end
 local function polls()
@@ -712,7 +712,7 @@ local function polls()
   for _u1 in next, _u15 do
     local x = _u15[_u1]
     local p = ffi["new"]("struct pollfd")
-    p.fd = x.stream
+    p.fd = x.fd
     p.events = x.events
     add(ps, p)
   end
@@ -722,16 +722,16 @@ local function tick(a, n)
   local i = 0
   while i < n do
     local _u18 = a[i]
-    local s = _u18.fd
+    local fd = _u18.fd
     local r = _u18.revents
-    local _u19 = threads[s]
+    local _u19 = threads[fd]
     local v = _u19.events
     local t = _u19.thread
     if dead63(t) or error63(r) then
-      leave(s)
+      leave(fd)
     else
       if v == POLLNONE or r > 0 then
-        run(t, s)
+        run(t, fd)
       end
     end
     i = i + 1
@@ -760,8 +760,8 @@ function loop()
 end
 local F_SETFL = 4
 local O_NONBLOCK = 4
-local function accept(s)
-  local _u24 = c.accept(s, nil, nil)
+local function accept(fd)
+  local _u24 = c.accept(fd, nil, nil)
   if _u24 < 0 then
     abort("accept")
   end
@@ -769,26 +769,22 @@ local function accept(s)
   return(_u24)
 end
 function listen(port, f)
-  local function connect(s)
-    local _u27 = accept(s)
-    local t = thread(f)
-    enter(_u27, t, POLLNONE)
+  local function connect(fd)
+    enter(accept(fd), thread(f), POLLNONE)
     return(connect(coroutine.yield()))
   end
-  local s = bind(port)
-  local t = thread(connect)
-  return(enter(s, t, POLLIN))
+  return(enter(bind(port), thread(connect), POLLIN))
 end
-local function wait(s, v)
-  local x = threads[s]
+local function wait(fd, v)
+  local x = threads[fd]
   x.events = v
   return(coroutine.yield())
 end
 local BUFFER_SIZE = 2048
-function receive(s)
-  wait(s, POLLIN)
+function receive(fd)
+  wait(fd, POLLIN)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
-  local x = c.read(s, b, BUFFER_SIZE)
+  local x = c.read(fd, b, BUFFER_SIZE)
   if x < 0 then
     return(abort())
   else
@@ -797,13 +793,13 @@ function receive(s)
     end
   end
 end
-function send(s, b)
+function send(fd, b)
   local i = 0
   local n = _35(b)
-  local _u31 = ffi.cast("const char*", b)
+  local _u30 = ffi.cast("const char*", b)
   while i < n do
-    wait(s, POLLOUT)
-    local x = c.write(s, _u31 + i, n - i)
+    wait(fd, POLLOUT)
+    local x = c.write(fd, _u30 + i, n - i)
     if x < 0 then
       abort()
     end

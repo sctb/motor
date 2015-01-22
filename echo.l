@@ -1,10 +1,10 @@
 ;; -*- mode: lisp -*-
 
-(define connect (s)
-  (let (b (receive s))
+(define connect (fd)
+  (let (b (receive fd))
     (while b
-      (send s b)
-      (set b (receive s)))))
+      (send fd b)
+      (set b (receive fd)))))
 
 (define start (port)
   (listen port connect)
