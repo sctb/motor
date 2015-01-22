@@ -4,10 +4,10 @@ LUMEN := LUMEN_HOST=luajit lumen
 RUNTIME := lib/lumen/runtime.lua lib/lumen/io.lua
 LIBS :=	obj/lib.lua obj/motor.lua obj/http.lua
 
-all: bin/echo.lua bin/web.lua
+all: bin/echo.lua bin/serve.lua
 
 clean:
-	@git checkout bin/echo.lua bin/web.lua
+	@git checkout bin/echo.lua bin/serve.lua
 	@rm -f obj/*
 
 bin/echo.lua: $(LIBS) obj/echo.lua
@@ -15,7 +15,7 @@ bin/echo.lua: $(LIBS) obj/echo.lua
 	@cat $(RUNTIME) $^ > $@.tmp
 	@mv $@.tmp $@
 
-bin/web.lua: $(LIBS) obj/web.lua
+bin/serve.lua: $(LIBS) obj/serve.lua
 	@echo $@
 	@cat $(RUNTIME) $^ > $@.tmp
 	@mv $@.tmp $@
