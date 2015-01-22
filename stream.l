@@ -11,7 +11,7 @@
       (cat! s.buffer b)
       #t)))
 
-(define before (s pat)
+(define-local before (s pat)
   (let (i nil)
     (while (nil? i)
       (let (n (search s.buffer pat s.pos))
