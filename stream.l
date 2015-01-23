@@ -24,13 +24,13 @@
         (set s.pos i)
         (clip s.buffer n i)))))
 
-(define line (s pat)
+(define-local line (s pat)
   (let (p (or pat "\n")
         b (before s p))
     (inc s.pos (# p))
     b))
 
-(define amount (s n)
+(define-local amount (s n)
   (while (< (- (# s.buffer) s.pos) n)
     (unless (fill s)
       (break)))

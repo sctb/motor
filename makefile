@@ -4,8 +4,8 @@ LUMEN := LUMEN_HOST=luajit lumen
 RUNTIME := lib/lumen/runtime.lua lib/lumen/io.lua
 LIBS :=	obj/lib.lua	\
 	obj/motor.lua	\
-	obj/http.lua	\
 	obj/stream.lua	\
+	obj/http.lua	\
 	obj/pq.lua
 
 all: bin/echo.lua bin/serve.lua
