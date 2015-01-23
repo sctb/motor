@@ -1,11 +1,5 @@
 ;; -*- mode: lisp -*-
 
-(define ffi (require 'ffi))
-(define-local c ffi.C)
-
-(define-macro define-c (x)
-  (cat "|ffi.cdef[[" (inner x) "]]|"))
-
 (define-c |
 int socket(int domain, int type, int protocol);
 int fcntl(int fildes, int cmd, ...);
@@ -113,7 +107,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define-local error? (v)
   (> v 0x0007))
 
-(define-local enter (fd t rest: vs)
+(define enter (fd t rest: vs)
   (let (v (apply bit.bor vs)
         x (obj fd: fd
                thread: t
@@ -184,7 +178,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (connect (yield)))
   (enter (bind port) (thread connect) POLLIN))
 
-(define-local wait (fd v)
+(define wait (fd v)
   (let (x (get threads fd))
     (set x.events v))
   (yield))

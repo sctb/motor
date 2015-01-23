@@ -5,7 +5,8 @@ RUNTIME := lib/lumen/runtime.lua lib/lumen/io.lua
 LIBS :=	obj/lib.lua \
 	obj/motor.lua \
 	obj/http.lua \
-	obj/stream.lua
+	obj/stream.lua \
+	obj/pq.lua
 
 all: bin/echo.lua bin/serve.lua
 
@@ -24,6 +25,10 @@ bin/serve.lua: $(LIBS) obj/serve.lua
 	@mv $@.tmp $@
 
 obj/echo.lua: echo.l obj/lib.lua
+	@echo "  $@"
+	@$(LUMEN) `echo $^ | cut -d ' ' -f 2-` -c $< -o $@ -t lua
+
+obj/pq.lua: pq.l obj/lib.lua
 	@echo "  $@"
 	@$(LUMEN) `echo $^ | cut -d ' ' -f 2-` -c $< -o $@ -t lua
 

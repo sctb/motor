@@ -557,6 +557,11 @@ end
 function argv()
   return(arg)
 end
+ffi = require("ffi")
+local c = ffi.C
+setenv("define-c", {_stash = true, macro = function (x)
+  return("|ffi.cdef[[" .. inner(x) .. "]]|")
+end})
 function dead63(c)
   return(coroutine.status(c) == "dead")
 end
@@ -571,11 +576,6 @@ end})
 function thread(f)
   return(coroutine.create(f))
 end
-ffi = require("ffi")
-local c = ffi.C
-setenv("define-c", {_stash = true, macro = function (x)
-  return("|ffi.cdef[[" .. inner(x) .. "]]|")
-end})
 ffi.cdef[[
 int socket(int domain, int type, int protocol);
 int fcntl(int fildes, int cmd, ...);
@@ -662,8 +662,8 @@ local function bind(port)
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = INADDR_ANY
-  local _u8 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(fd, _u8, n)
+  local _u6 = ffi.cast("struct sockaddr*", p)
+  local x = c.bind(fd, _u6, n)
   if x < 0 then
     abort("bind")
   end
@@ -683,9 +683,9 @@ local threads = {}
 local function error63(v)
   return(v > 7)
 end
-local function enter(fd, t, ...)
-  local _u10 = unstash({...})
-  local vs = cut(_u10, 0)
+function enter(fd, t, ...)
+  local _u8 = unstash({...})
+  local vs = cut(_u8, 0)
   local v = apply(bit.bor, vs)
   local x = {fd = fd, thread = t, events = v}
   threads[fd] = x
@@ -705,10 +705,10 @@ local function run(t, fd)
 end
 local function polls()
   local ps = {}
-  local _u15 = threads
+  local _u13 = threads
   local _u1 = nil
-  for _u1 in next, _u15 do
-    local x = _u15[_u1]
+  for _u1 in next, _u13 do
+    local x = _u13[_u1]
     local p = ffi["new"]("struct pollfd")
     p.fd = x.fd
     p.events = x.events
@@ -719,12 +719,12 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u18 = a[i]
-    local fd = _u18.fd
-    local r = _u18.revents
-    local _u19 = threads[fd]
-    local v = _u19.events
-    local t = _u19.thread
+    local _u16 = a[i]
+    local fd = _u16.fd
+    local r = _u16.revents
+    local _u17 = threads[fd]
+    local v = _u17.events
+    local t = _u17.thread
     if dead63(t) or error63(r) then
       leave(fd)
     else
@@ -759,12 +759,12 @@ end
 local F_SETFL = 4
 local O_NONBLOCK = 4
 local function accept(fd)
-  local _u24 = c.accept(fd, nil, nil)
-  if _u24 < 0 then
+  local _u22 = c.accept(fd, nil, nil)
+  if _u22 < 0 then
     abort("accept")
   end
-  c.fcntl(_u24, F_SETFL, O_NONBLOCK)
-  return(_u24)
+  c.fcntl(_u22, F_SETFL, O_NONBLOCK)
+  return(_u22)
 end
 function listen(port, f)
   local function connect(fd)
@@ -773,7 +773,7 @@ function listen(port, f)
   end
   return(enter(bind(port), thread(connect), POLLIN))
 end
-local function wait(fd, v)
+function wait(fd, v)
   local x = threads[fd]
   x.events = v
   return(coroutine.yield())
@@ -794,10 +794,10 @@ end
 function send(fd, b)
   local i = 0
   local n = _35(b)
-  local _u30 = ffi.cast("const char*", b)
+  local _u28 = ffi.cast("const char*", b)
   while i < n do
     wait(fd, POLLOUT)
-    local x = c.write(fd, _u30 + i, n - i)
+    local x = c.write(fd, _u28 + i, n - i)
     if x < 0 then
       abort()
     end
@@ -870,7 +870,7 @@ local function fill(s)
     return(true)
   end
 end
-function before(s, pat)
+local function before(s, pat)
   local i = nil
   while nil63(i) do
     local n = search(s.buffer, pat, s.pos)
@@ -906,6 +906,155 @@ function amount(s, n)
 end
 function write(s, b)
   return(send(s.fd, b))
+end
+ffi.cdef[[
+struct pg_conn;
+struct pg_result;
+
+typedef struct pg_conn PGconn;
+typedef struct pg_result PGresult;
+
+typedef enum
+{
+	CONNECTION_OK,
+	CONNECTION_BAD,
+
+	/* Non-blocking mode only below here */
+	CONNECTION_STARTED,
+	CONNECTION_MADE,
+	CONNECTION_AWAITING_RESPONSE,
+	CONNECTION_AUTH_OK,
+	CONNECTION_SETENV,
+	CONNECTION_SSL_STARTUP,
+	CONNECTION_NEEDED
+} ConnStatusType;
+
+typedef enum
+{
+	PGRES_EMPTY_QUERY = 0,
+	PGRES_COMMAND_OK,
+	PGRES_TUPLES_OK,
+	PGRES_COPY_OUT,
+	PGRES_COPY_IN,
+	PGRES_BAD_RESPONSE,
+	PGRES_NONFATAL_ERROR,
+	PGRES_FATAL_ERROR,
+	PGRES_COPY_BOTH,
+	PGRES_SINGLE_TUPLE
+} ExecStatusType;
+
+PGconn *PQconnectdb(const char *conninfo);
+
+ConnStatusType PQstatus(const PGconn *conn);
+ExecStatusType PQresultStatus(const PGresult *res);
+
+void PQfinish(PGconn *conn);
+void PQreset(PGconn *conn);
+
+int PQsocket(const PGconn *conn);
+int PQsendQuery(PGconn *conn, const char *command);
+int PQconsumeInput(PGconn *conn);
+int PQisBusy(PGconn *conn);
+int PQsetnonblocking(PGconn *conn, int arg);
+int PQflush(PGconn *conn);
+
+char *PQerrorMessage(const PGconn *conn);
+char *PQresultErrorMessage(const PGresult *res);
+
+PGresult *PQgetResult(PGconn *conn);
+void PQclear(PGresult *res);
+]]
+local pq = ffi.load("pq")
+local function abort(p, name)
+  local e = ffi.string(pq.PQerrorMessage(p))
+  error((name or "error") .. ": " .. e)
+end
+function connected63(p)
+  return(pq.PQstatus(p) == pq.CONNECTION_OK)
+end
+function connect(s, t)
+  local p = pq.PQconnectdb(s)
+  if not connected63(p) then
+    abort(p, "connect")
+  end
+  local x = pq.PQsetnonblocking(p, 1)
+  if not (x == 0) then
+    abort(p, "connect")
+  end
+  local fd = pq.PQsocket(p)
+  enter(fd, t, POLLNONE)
+  return(p)
+end
+function finish(p)
+  return(pq.PQfinish(p))
+end
+function reset(p)
+  pq.PQreset(p)
+  if not connected63(p) then
+    return(abort(p, "reset"))
+  end
+end
+local function consume(p, fd)
+  wait(fd, POLLIN)
+  local x = pq.PQconsumeInput(p)
+  if x == 0 then
+    return(abort(p, "consume"))
+  end
+end
+function status(r)
+  local x = pq.PQresultStatus(r)
+  if x > pq.PGRES_TUPLES_OK then
+    return(ffi.string(pq.PQresultErrorMessage(r)))
+  end
+end
+function clear(r)
+  return(pq.PQclear(r))
+end
+local function send_query(p, fd, q)
+  local x = pq.PQsendQuery(p, q)
+  if x == 0 then
+    abort(p, "query")
+  end
+  local sent = false
+  while not sent do
+    wait(fd, POLLOUT)
+    local _u11 = pq.PQflush(p)
+    if _u11 < 0 then
+      abort(p, "query")
+    else
+      if _u11 == 0 then
+        sent = true
+      end
+    end
+  end
+end
+local function get_results(p, fd)
+  local rs = {}
+  while true do
+    if pq.PQisBusy(p) == 0 then
+      local r = pq.PQgetResult(p)
+      if nil63(r) then
+        break
+      else
+        add(rs, r)
+      end
+    else
+      consume(p, fd)
+    end
+  end
+  return(rs)
+end
+function query(p, q)
+  local fd = pq.PQsocket(p)
+  send_query(p, fd, q)
+  local rs = get_results(p, fd)
+  local _u14 = map(status, rs)
+  local _u1 = nil
+  for _u1 in next, _u14 do
+    local s = _u14[_u1]
+    print(string(s))
+  end
+  return(map(clear, rs))
 end
 function connect(fd)
   local b = receive(fd)
