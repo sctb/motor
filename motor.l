@@ -74,10 +74,6 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (abort 'socket))
     fd))
 
-(define-local close (fd)
-  (when (< (c.close fd) 0)
-    (abort 'close)))
-
 (define-local bind (port)
   (let (fd (socket)
         p (ffi.new "struct sockaddr_in[1]")
@@ -107,19 +103,26 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define-local error? (v)
   (> v 0x0007))
 
-(define enter (fd t rest: vs)
-  (let (v (apply bit.bor vs)
-        x (obj fd: fd
-               thread: t
-               events: v))
+(define-local close (fd)
+  (when (< (c.close fd) 0)
+    (abort 'close)))
+
+(define enter (:fd :thread :state :final)
+  (let (x (obj fd: fd
+               thread: thread
+               events: POLLNONE
+               state: (or state fd)
+               final: (or final close)))
     (set (get threads fd) x)))
 
 (define-local leave (fd)
-  (set (get threads fd) nil)
-  (close fd))
+  (let ((:final :state) (get threads fd))
+    (final state))
+  (set (get threads fd) nil))
 
-(define-local run (t fd)
-  (let (|b,e| (resume t fd))
+(define-local run (fd)
+  (let ((thread: t state: x) (get threads fd)
+        |b,e| (resume t x))
     (unless b
       (pr "error:" e))
     (when (dead? t)
@@ -141,7 +144,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (if (or (dead? t) (error? r))
           (leave fd)
           (or (= v POLLNONE) (> r 0))
-          (run t fd)))))
+          (run fd)))))
 
 (define-local IMMEDIATE 0)
 (define-local NEVER -1)
@@ -174,9 +177,10 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define listen (port f)
   (define-local connect (fd)
-    (enter (accept fd) (thread f) POLLNONE)
+    (wait fd POLLIN)
+    (enter fd: (accept fd) thread: (thread f))
     (connect (yield)))
-  (enter (bind port) (thread connect) POLLIN))
+  (enter fd: (bind port) thread: (thread connect)))
 
 (define wait (fd v)
   (let (x (get threads fd))

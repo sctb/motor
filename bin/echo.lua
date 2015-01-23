@@ -649,11 +649,6 @@ local function socket()
   end
   return(fd)
 end
-local function close(fd)
-  if c.close(fd) < 0 then
-    return(abort("close"))
-  end
-end
 local function bind(port)
   local fd = socket()
   local p = ffi["new"]("struct sockaddr_in[1]")
@@ -662,8 +657,8 @@ local function bind(port)
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = INADDR_ANY
-  local _u6 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(fd, _u6, n)
+  local _u5 = ffi.cast("struct sockaddr*", p)
+  local x = c.bind(fd, _u5, n)
   if x < 0 then
     abort("bind")
   end
@@ -683,19 +678,32 @@ local threads = {}
 local function error63(v)
   return(v > 7)
 end
-function enter(fd, t, ...)
+local function close(fd)
+  if c.close(fd) < 0 then
+    return(abort("close"))
+  end
+end
+function enter(...)
   local _u8 = unstash({...})
-  local vs = cut(_u8, 0)
-  local v = apply(bit.bor, vs)
-  local x = {fd = fd, thread = t, events = v}
+  local fd = _u8.fd
+  local thread = _u8.thread
+  local state = _u8.state
+  local final = _u8.final
+  local x = {events = POLLNONE, fd = fd, thread = thread, state = state or fd, final = final or close}
   threads[fd] = x
 end
 local function leave(fd)
+  local _u11 = threads[fd]
+  local state = _u11.state
+  local final = _u11.final
+  final(state)
   threads[fd] = nil
-  return(close(fd))
 end
-local function run(t, fd)
-  local b,e = coroutine.resume(t, fd)
+local function run(fd)
+  local _u13 = threads[fd]
+  local x = _u13.state
+  local t = _u13.thread
+  local b,e = coroutine.resume(t, x)
   if not b then
     print("error:" .. " " .. string(e))
   end
@@ -705,10 +713,10 @@ local function run(t, fd)
 end
 local function polls()
   local ps = {}
-  local _u13 = threads
+  local _u15 = threads
   local _u1 = nil
-  for _u1 in next, _u13 do
-    local x = _u13[_u1]
+  for _u1 in next, _u15 do
+    local x = _u15[_u1]
     local p = ffi["new"]("struct pollfd")
     p.fd = x.fd
     p.events = x.events
@@ -719,17 +727,17 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u16 = a[i]
-    local fd = _u16.fd
-    local r = _u16.revents
-    local _u17 = threads[fd]
-    local v = _u17.events
-    local t = _u17.thread
+    local _u18 = a[i]
+    local fd = _u18.fd
+    local r = _u18.revents
+    local _u19 = threads[fd]
+    local v = _u19.events
+    local t = _u19.thread
     if dead63(t) or error63(r) then
       leave(fd)
     else
       if v == POLLNONE or r > 0 then
-        run(t, fd)
+        run(fd)
       end
     end
     i = i + 1
@@ -759,19 +767,20 @@ end
 local F_SETFL = 4
 local O_NONBLOCK = 4
 local function accept(fd)
-  local _u22 = c.accept(fd, nil, nil)
-  if _u22 < 0 then
+  local _u24 = c.accept(fd, nil, nil)
+  if _u24 < 0 then
     abort("accept")
   end
-  c.fcntl(_u22, F_SETFL, O_NONBLOCK)
-  return(_u22)
+  c.fcntl(_u24, F_SETFL, O_NONBLOCK)
+  return(_u24)
 end
 function listen(port, f)
   local function connect(fd)
-    enter(accept(fd), thread(f), POLLNONE)
+    wait(fd, POLLIN)
+    enter({_stash = true, fd = accept(fd), thread = thread(f)})
     return(connect(coroutine.yield()))
   end
-  return(enter(bind(port), thread(connect), POLLIN))
+  return(enter({_stash = true, fd = bind(port), thread = thread(connect)}))
 end
 function wait(fd, v)
   local x = threads[fd]
@@ -794,10 +803,10 @@ end
 function send(fd, b)
   local i = 0
   local n = _35(b)
-  local _u28 = ffi.cast("const char*", b)
+  local _u30 = ffi.cast("const char*", b)
   while i < n do
     wait(fd, POLLOUT)
-    local x = c.write(fd, _u28 + i, n - i)
+    local x = c.write(fd, _u30 + i, n - i)
     if x < 0 then
       abort()
     end
@@ -982,13 +991,13 @@ function connect(s, t)
     abort(p, "connect")
   end
   local fd = pq.PQsocket(p)
-  enter(fd, t, POLLNONE)
+  enter({_stash = true, fd = fd, thread = t, state = p, final = finish})
   return(p)
 end
-function finish(p)
+local function finish(p)
   return(pq.PQfinish(p))
 end
-function reset(p)
+local function reset(p)
   pq.PQreset(p)
   if not connected63(p) then
     return(abort(p, "reset"))
@@ -1001,13 +1010,13 @@ local function consume(p, fd)
     return(abort(p, "consume"))
   end
 end
-function status(r)
+local function status(r)
   local x = pq.PQresultStatus(r)
   if x > pq.PGRES_TUPLES_OK then
     return(ffi.string(pq.PQresultErrorMessage(r)))
   end
 end
-function clear(r)
+local function clear(r)
   return(pq.PQclear(r))
 end
 local function send_query(p, fd, q)

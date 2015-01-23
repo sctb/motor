@@ -75,13 +75,16 @@ void PQclear(PGresult *res);
       (unless (= x 0)
         (abort p 'connect)))
     (let (fd (pq.PQsocket p))
-      (enter fd t POLLNONE))
+      (enter fd: fd
+             thread: t
+             state: p
+             final: finish))
     p))
 
-(define finish (p)
+(define-local finish (p)
   (pq.PQfinish p))
 
-(define reset (p)
+(define-local reset (p)
   (pq.PQreset p)
   (unless (connected? p)
     (abort p 'reset)))
@@ -92,12 +95,12 @@ void PQclear(PGresult *res);
     (when (= x 0)
       (abort p 'consume))))
 
-(define status (r)
+(define-local status (r)
   (let (x (pq.PQresultStatus r))
     (when (> x pq.PGRES_TUPLES_OK)
       (ffi.string (pq.PQresultErrorMessage r)))))
 
-(define clear (r)
+(define-local clear (r)
   (pq.PQclear r))
 
 (define-local send-query (p fd q)
