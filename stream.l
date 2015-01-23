@@ -1,6 +1,6 @@
 ;; -*- mode: lisp -*-
 
-(define stream (fd)
+(define-local stream (fd)
   (obj fd: fd
        buffer: ""
        pos: 0))
@@ -38,5 +38,5 @@
     (inc s.pos (# b))
     b))
 
-(define write (s b)
+(define emit (s b)
   (send s.fd b))

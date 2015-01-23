@@ -151,7 +151,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define-local IMMEDIATE 0)
 (define-local NEVER -1)
 
-(define timeout ()
+(define-local timeout ()
   (if (find (fn (x)
               (= x.events POLLNONE))
             threads)

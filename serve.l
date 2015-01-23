@@ -1,6 +1,6 @@
 ;; -*- mode: lisp -*-
 
-(define handle (s)
+(define-local handle (s)
   (let (msg "")
     (define-local p args
       (cat! msg (apply cat args) "\n"))

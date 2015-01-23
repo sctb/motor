@@ -35,13 +35,13 @@
        data))
 
 (define respond (s data)
-  (write s (response data "200 OK")))
+  (emit s (response data "200 OK")))
 
 (define problem (s data)
-  (write s (response data "500 Internal Server Error")))
+  (emit s (response data "500 Internal Server Error")))
 
 (define unknown (s)
-  (write s (response "Unknown" "404 Not Found")))
+  (emit s (response "Unknown" "404 Not Found")))
 
 (define serve (port f)
   (define-local connect (fd)

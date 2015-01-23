@@ -746,7 +746,7 @@ local function tick(a, n)
 end
 local IMMEDIATE = 0
 local NEVER = -1
-function timeout()
+local function timeout()
   if find(function (x)
     return(x.events == POLLNONE)
   end, threads) then
@@ -855,13 +855,13 @@ local function response(data, code)
   return("HTTP/1.1 " .. code .. sep .. "Content-Length: " .. _35(data) .. sep2 .. data)
 end
 function respond(s, data)
-  return(write(s, response(data, "200 OK")))
+  return(emit(s, response(data, "200 OK")))
 end
 function problem(s, data)
-  return(write(s, response(data, "500 Internal Server Error")))
+  return(emit(s, response(data, "500 Internal Server Error")))
 end
 function unknown(s)
-  return(write(s, response("Unknown", "404 Not Found")))
+  return(emit(s, response("Unknown", "404 Not Found")))
 end
 function serve(port, f)
   local function connect(fd)
@@ -870,7 +870,7 @@ function serve(port, f)
   listen(port, connect)
   return(loop())
 end
-function stream(fd)
+local function stream(fd)
   return({fd = fd, pos = 0, buffer = ""})
 end
 local function fill(s)
@@ -914,7 +914,7 @@ function amount(s, n)
   s.pos = s.pos + _35(b)
   return(b)
 end
-function write(s, b)
+function emit(s, b)
   return(send(s.fd, b))
 end
 ffi.cdef[[
