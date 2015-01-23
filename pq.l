@@ -56,16 +56,25 @@ char *PQresultErrorMessage(const PGresult *res);
 
 PGresult *PQgetResult(PGconn *conn);
 void PQclear(PGresult *res);
+char *PQcmdStatus(PGresult *res);
+char *PQcmdTuples(PGresult *res);
+int PQntuples(const PGresult *res);
+int PQnfields(const PGresult *res);
+char *PQfname(const PGresult *res, int column_number);
+char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 |)
 
 (define-local pq (ffi.load 'pq))
 
 (define-local abort (p name)
-  (let (e (ffi.string (pq.PQerrorMessage p)))
+  (let (e (cstr (pq.PQerrorMessage p)))
     (error (cat (or name 'error) ": " e))))
 
 (define connected? (p)
   (= (pq.PQstatus p) pq.CONNECTION_OK))
+
+(define-local finish (p)
+  (pq.PQfinish p))
 
 (define connect (s t)
   (let (p (pq.PQconnectdb s))
@@ -81,9 +90,6 @@ void PQclear(PGresult *res);
              final: finish))
     p))
 
-(define-local finish (p)
-  (pq.PQfinish p))
-
 (define-local reset (p)
   (pq.PQreset p)
   (unless (connected? p)
@@ -95,10 +101,31 @@ void PQclear(PGresult *res);
     (when (= x 0)
       (abort p 'consume))))
 
-(define-local status (r)
+(define-local get-rows (res n m)
+  (let (rs ())
+    (for (i n)
+      (let (r (obj))
+        (for (j m)
+          (let (k (cstr (pq.PQfname res j))
+                v (cstr (pq.PQgetvalue res i j)))
+            (set (get r k) v)))
+        (add rs r)))
+    rs))
+
+(define-local result (r)
   (let (x (pq.PQresultStatus r))
-    (when (> x pq.PGRES_TUPLES_OK)
-      (ffi.string (pq.PQresultErrorMessage r)))))
+    (if (= x pq.PGRES_COMMAND_OK)
+        (let (a (cstr (pq.PQcmdTuples r)))
+          (obj command: (cstr (pq.PQcmdStatus r))
+               size: (when (some? a) (number a))))
+        (or (= x pq.PGRES_TUPLES_OK)
+            (= x pq.PGRES_SINGLE_TUPLE))
+        (let (n (pq.PQntuples r)
+              m (pq.PQnfields r))
+          (obj command: (cstr (pq.PQcmdStatus r))
+               size: n
+               rows: (get-rows r n m)))
+      (obj error: (cstr (pq.PQresultErrorMessage r))))))
 
 (define-local clear (r)
   (pq.PQclear r))
@@ -119,14 +146,16 @@ void PQclear(PGresult *res);
     (while #t
       (if (= (pq.PQisBusy p) 0)
           (let (r (pq.PQgetResult p))
-            (if (nil? r) (break) (add rs r)))
+            (if (is? r)
+                (add rs r)
+              (break)))
         (consume p fd)))
     rs))
 
 (define query (p q)
   (let (fd (pq.PQsocket p))
     (send-query p fd q)
-    (let (rs (get-results p fd))
-      (each (_ s) (map status rs)
-        (pr s))
-      (map clear rs))))
+    (let (rs (get-results p fd)
+          xs (map result rs))
+      (map clear rs)
+      xs)))

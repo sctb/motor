@@ -1,7 +1,7 @@
 ;; -*- mode: lisp -*-
 
 (define ffi (require 'ffi))
-(define-local c ffi.C)
+(define cstr ffi.string)
 
 (define-macro define-c (x)
   (cat "|ffi.cdef[[" (inner x) "]]|"))

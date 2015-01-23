@@ -558,7 +558,7 @@ function argv()
   return(arg)
 end
 ffi = require("ffi")
-local c = ffi.C
+cstr = ffi.string
 setenv("define-c", {_stash = true, macro = function (x)
   return("|ffi.cdef[[" .. inner(x) .. "]]|")
 end})
@@ -633,8 +633,9 @@ typedef int ssize_t;
 ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 ]]
+local c = ffi.C
 local function abort(name)
-  local e = ffi.string(c.strerror(ffi.errno()))
+  local e = cstr(c.strerror(ffi.errno()))
   error((name or "error") .. ": " .. e)
 end
 local PF_INET = 2
@@ -796,7 +797,7 @@ function receive(fd)
     return(abort())
   else
     if x > 0 then
-      return(ffi.string(b))
+      return(cstr(b))
     end
   end
 end
@@ -972,14 +973,23 @@ char *PQresultErrorMessage(const PGresult *res);
 
 PGresult *PQgetResult(PGconn *conn);
 void PQclear(PGresult *res);
+char *PQcmdStatus(PGresult *res);
+char *PQcmdTuples(PGresult *res);
+int PQntuples(const PGresult *res);
+int PQnfields(const PGresult *res);
+char *PQfname(const PGresult *res, int column_number);
+char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 ]]
 local pq = ffi.load("pq")
 local function abort(p, name)
-  local e = ffi.string(pq.PQerrorMessage(p))
+  local e = cstr(pq.PQerrorMessage(p))
   error((name or "error") .. ": " .. e)
 end
 function connected63(p)
   return(pq.PQstatus(p) == pq.CONNECTION_OK)
+end
+local function finish(p)
+  return(pq.PQfinish(p))
 end
 function connect(s, t)
   local p = pq.PQconnectdb(s)
@@ -994,9 +1004,6 @@ function connect(s, t)
   enter({_stash = true, fd = fd, thread = t, state = p, final = finish})
   return(p)
 end
-local function finish(p)
-  return(pq.PQfinish(p))
-end
 local function reset(p)
   pq.PQreset(p)
   if not connected63(p) then
@@ -1010,10 +1017,40 @@ local function consume(p, fd)
     return(abort(p, "consume"))
   end
 end
-local function status(r)
+local function get_rows(res, n, m)
+  local rs = {}
+  local i = 0
+  while i < n do
+    local r = {}
+    local j = 0
+    while j < m do
+      local k = cstr(pq.PQfname(res, j))
+      local v = cstr(pq.PQgetvalue(res, i, j))
+      r[k] = v
+      j = j + 1
+    end
+    add(rs, r)
+    i = i + 1
+  end
+  return(rs)
+end
+local function result(r)
   local x = pq.PQresultStatus(r)
-  if x > pq.PGRES_TUPLES_OK then
-    return(ffi.string(pq.PQresultErrorMessage(r)))
+  if x == pq.PGRES_COMMAND_OK then
+    local a = cstr(pq.PQcmdTuples(r))
+    local _u14
+    if some63(a) then
+      _u14 = number(a)
+    end
+    return({size = _u14, command = cstr(pq.PQcmdStatus(r))})
+  else
+    if x == pq.PGRES_TUPLES_OK or x == pq.PGRES_SINGLE_TUPLE then
+      local n = pq.PQntuples(r)
+      local m = pq.PQnfields(r)
+      return({command = cstr(pq.PQcmdStatus(r)), rows = get_rows(r, n, m), size = n})
+    else
+      return({error = cstr(pq.PQresultErrorMessage(r))})
+    end
   end
 end
 local function clear(r)
@@ -1042,10 +1079,10 @@ local function get_results(p, fd)
   while true do
     if pq.PQisBusy(p) == 0 then
       local r = pq.PQgetResult(p)
-      if nil63(r) then
-        break
-      else
+      if is63(r) then
         add(rs, r)
+      else
+        break
       end
     else
       consume(p, fd)
@@ -1057,13 +1094,9 @@ function query(p, q)
   local fd = pq.PQsocket(p)
   send_query(p, fd, q)
   local rs = get_results(p, fd)
-  local _u14 = map(status, rs)
-  local _u1 = nil
-  for _u1 in next, _u14 do
-    local s = _u14[_u1]
-    print(string(s))
-  end
-  return(map(clear, rs))
+  local xs = map(result, rs)
+  map(clear, rs)
+  return(xs)
 end
 function connect(fd)
   local b = receive(fd)

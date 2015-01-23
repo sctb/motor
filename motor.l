@@ -58,8 +58,10 @@ ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 |)
 
+(define-local c ffi.C)
+
 (define-local abort (name)
-  (let (e (ffi.string (c.strerror (ffi.errno))))
+  (let (e (cstr (c.strerror (ffi.errno))))
     (error (cat (or name 'error) ": " e))))
 
 (define-local PF_INET 2)
@@ -194,7 +196,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (let (b (ffi.new "char[?]" BUFFER_SIZE)
         x (c.read fd b BUFFER_SIZE))
     (if (< x 0) (abort)
-        (> x 0) (ffi.string b))))
+        (> x 0) (cstr b))))
 
 (define send (fd b)
   (let (i 0 n (# b)
