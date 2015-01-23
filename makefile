@@ -8,7 +8,7 @@ LIBS :=	obj/lib.lua	\
 	obj/http.lua	\
 	obj/pq.lua
 
-all: bin/echo.lua bin/serve.lua
+all: bin/motor.lua bin/echo.lua bin/serve.lua
 
 clean:
 	@git checkout bin/echo.lua bin/serve.lua bin/motor.lua
