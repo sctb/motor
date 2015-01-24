@@ -70,7 +70,7 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
   (let (e (cstr (pq.PQerrorMessage p)))
     (error (cat (or name 'error) ": " e))))
 
-(define connected? (p)
+(define-local connected? (p)
   (= (pq.PQstatus p) pq.CONNECTION_OK))
 
 (define-local finish (p)
@@ -78,22 +78,16 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 
 (define connect (s t)
   (let (p (pq.PQconnectdb s))
-    (unless (connected? p)
-      (abort p 'connect))
-    (let (x (pq.PQsetnonblocking p 1))
-      (unless (= x 0)
-        (abort p 'connect)))
-    (let (fd (pq.PQsocket p))
-      (enter fd: fd
-             thread: t
-             state: p
-             final: finish))
-    p))
-
-(define-local reset (p)
-  (pq.PQreset p)
-  (unless (connected? p)
-    (abort p 'reset)))
+    (when (connected? p)
+      (let (x (pq.PQsetnonblocking p 1))
+        (unless (= x 0)
+          (abort p 'connect)))
+      (let (fd (pq.PQsocket p))
+        (enter fd: fd
+               thread: t
+               state: p
+               final: finish))
+      p)))
 
 (define-local consume (p fd)
   (wait fd POLLIN)

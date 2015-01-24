@@ -988,7 +988,7 @@ local function abort(p, name)
   local e = cstr(pq.PQerrorMessage(p))
   error((name or "error") .. ": " .. e)
 end
-function connected63(p)
+local function connected63(p)
   return(pq.PQstatus(p) == pq.CONNECTION_OK)
 end
 local function finish(p)
@@ -996,21 +996,14 @@ local function finish(p)
 end
 function connect(s, t)
   local p = pq.PQconnectdb(s)
-  if not connected63(p) then
-    abort(p, "connect")
-  end
-  local x = pq.PQsetnonblocking(p, 1)
-  if not (x == 0) then
-    abort(p, "connect")
-  end
-  local fd = pq.PQsocket(p)
-  enter({_stash = true, fd = fd, thread = t, state = p, final = finish})
-  return(p)
-end
-local function reset(p)
-  pq.PQreset(p)
-  if not connected63(p) then
-    return(abort(p, "reset"))
+  if connected63(p) then
+    local x = pq.PQsetnonblocking(p, 1)
+    if not (x == 0) then
+      abort(p, "connect")
+    end
+    local fd = pq.PQsocket(p)
+    enter({_stash = true, fd = fd, thread = t, state = p, final = finish})
+    return(p)
   end
 end
 local function consume(p, fd)
@@ -1041,11 +1034,11 @@ local function result(r)
   local x = pq.PQresultStatus(r)
   if x == pq.PGRES_COMMAND_OK then
     local a = cstr(pq.PQcmdTuples(r))
-    local _u14
+    local _u13
     if some63(a) then
-      _u14 = number(a)
+      _u13 = number(a)
     end
-    return({size = _u14, command = cstr(pq.PQcmdStatus(r))})
+    return({size = _u13, command = cstr(pq.PQcmdStatus(r))})
   else
     if x == pq.PGRES_TUPLES_OK or x == pq.PGRES_SINGLE_TUPLE then
       local n = pq.PQntuples(r)
@@ -1067,11 +1060,11 @@ local function send_query(p, fd, q)
   local sent = false
   while not sent do
     wait(fd, POLLOUT)
-    local _u11 = pq.PQflush(p)
-    if _u11 < 0 then
+    local _u10 = pq.PQflush(p)
+    if _u10 < 0 then
       abort(p, "query")
     else
-      if _u11 == 0 then
+      if _u10 == 0 then
         sent = true
       end
     end
