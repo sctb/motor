@@ -109,6 +109,9 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (when (< (c.close fd) 0)
     (abort 'close)))
 
+(define active (fd)
+  (get threads fd))
+
 (define enter (:fd :thread :state :final)
   (let (x (obj fd: fd
                thread: thread
@@ -118,12 +121,12 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (set (get threads fd) x)))
 
 (define-local leave (fd)
-  (let ((:final :state) (get threads fd))
+  (let ((:final :state) (active fd))
     (final state))
   (set (get threads fd) nil))
 
 (define-local run (fd)
-  (let ((thread: t state: x) (get threads fd)
+  (let ((thread: t state: x) (active fd)
         |b,e| (resume t x))
     (unless b
       (pr "error:" e))
@@ -185,7 +188,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (enter fd: (bind port) thread: (thread connect)))
 
 (define wait (fd v)
-  (let (x (get threads fd))
+  (let (x (active fd))
     (set x.events v))
   (yield))
 

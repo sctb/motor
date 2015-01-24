@@ -125,26 +125,29 @@ local function close(fd)
     return(abort("close"))
   end
 end
+function active(fd)
+  return(threads[fd])
+end
 function enter(...)
-  local _u8 = unstash({...})
-  local fd = _u8.fd
-  local thread = _u8.thread
-  local state = _u8.state
-  local final = _u8.final
+  local _u9 = unstash({...})
+  local fd = _u9.fd
+  local thread = _u9.thread
+  local state = _u9.state
+  local final = _u9.final
   local x = {events = POLLNONE, fd = fd, thread = thread, state = state or fd, final = final or close}
   threads[fd] = x
 end
 local function leave(fd)
-  local _u11 = threads[fd]
-  local state = _u11.state
-  local final = _u11.final
+  local _u12 = active(fd)
+  local state = _u12.state
+  local final = _u12.final
   final(state)
   threads[fd] = nil
 end
 local function run(fd)
-  local _u13 = threads[fd]
-  local x = _u13.state
-  local t = _u13.thread
+  local _u14 = active(fd)
+  local x = _u14.state
+  local t = _u14.thread
   local b,e = coroutine.resume(t, x)
   if not b then
     print("error:" .. " " .. string(e))
@@ -155,10 +158,10 @@ local function run(fd)
 end
 local function polls()
   local ps = {}
-  local _u15 = threads
+  local _u16 = threads
   local _u1 = nil
-  for _u1 in next, _u15 do
-    local x = _u15[_u1]
+  for _u1 in next, _u16 do
+    local x = _u16[_u1]
     local p = ffi["new"]("struct pollfd")
     p.fd = x.fd
     p.events = x.events
@@ -169,12 +172,12 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u18 = a[i]
-    local fd = _u18.fd
-    local r = _u18.revents
-    local _u19 = threads[fd]
-    local v = _u19.events
-    local t = _u19.thread
+    local _u19 = a[i]
+    local fd = _u19.fd
+    local r = _u19.revents
+    local _u20 = threads[fd]
+    local v = _u20.events
+    local t = _u20.thread
     if dead63(t) or error63(r) then
       leave(fd)
     else
@@ -209,12 +212,12 @@ end
 local F_SETFL = 4
 local O_NONBLOCK = 4
 local function accept(fd)
-  local _u24 = c.accept(fd, nil, nil)
-  if _u24 < 0 then
+  local _u25 = c.accept(fd, nil, nil)
+  if _u25 < 0 then
     abort("accept")
   end
-  c.fcntl(_u24, F_SETFL, O_NONBLOCK)
-  return(_u24)
+  c.fcntl(_u25, F_SETFL, O_NONBLOCK)
+  return(_u25)
 end
 function listen(port, f)
   local function connect(fd)
@@ -225,7 +228,7 @@ function listen(port, f)
   return(enter({_stash = true, fd = bind(port), thread = thread(connect)}))
 end
 function wait(fd, v)
-  local x = threads[fd]
+  local x = active(fd)
   x.events = v
   return(coroutine.yield())
 end
@@ -245,10 +248,10 @@ end
 function send(fd, b)
   local i = 0
   local n = _35(b)
-  local _u30 = ffi.cast("const char*", b)
+  local _u31 = ffi.cast("const char*", b)
   while i < n do
     wait(fd, POLLOUT)
-    local x = c.write(fd, _u30 + i, n - i)
+    local x = c.write(fd, _u31 + i, n - i)
     if x < 0 then
       abort()
     end
