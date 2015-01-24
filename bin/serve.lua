@@ -685,7 +685,7 @@ local function close(fd)
   end
 end
 function active(fd)
-  return(threads[fd])
+  return(threads[fd].thread)
 end
 function enter(...)
   local _u9 = unstash({...})
@@ -697,14 +697,14 @@ function enter(...)
   threads[fd] = x
 end
 local function leave(fd)
-  local _u12 = active(fd)
+  local _u12 = threads[fd]
   local state = _u12.state
   local final = _u12.final
   final(state)
   threads[fd] = nil
 end
 local function run(fd)
-  local _u14 = active(fd)
+  local _u14 = threads[fd]
   local x = _u14.state
   local t = _u14.thread
   local b,e = coroutine.resume(t, x)
@@ -787,7 +787,7 @@ function listen(port, f)
   return(enter({_stash = true, fd = bind(port), thread = thread(connect)}))
 end
 function wait(fd, v)
-  local x = active(fd)
+  local x = threads[fd]
   x.events = v
   return(coroutine.yield())
 end
