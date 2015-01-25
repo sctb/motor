@@ -999,11 +999,17 @@ function connect(s, t)
     if not (x == 0) then
       abort(p, "connect")
     end
+    if function63(t) then
+      local f = t
+      t = thread(function ()
+        return(f(p))
+      end)
+    end
     local fd = pq.PQsocket(p)
-    local f = function ()
+    local _u6 = function ()
       return(finish(p))
     end
-    enter(fd, t, f)
+    enter(fd, t, _u6)
     return(p)
   end
 end
@@ -1035,11 +1041,11 @@ local function result(r)
   local x = pq.PQresultStatus(r)
   if x == pq.PGRES_COMMAND_OK then
     local a = cstr(pq.PQcmdTuples(r))
-    local _u14
+    local _u16
     if some63(a) then
-      _u14 = number(a)
+      _u16 = number(a)
     end
-    return({size = _u14, command = cstr(pq.PQcmdStatus(r))})
+    return({size = _u16, command = cstr(pq.PQcmdStatus(r))})
   else
     if x == pq.PGRES_TUPLES_OK or x == pq.PGRES_SINGLE_TUPLE then
       local n = pq.PQntuples(r)
@@ -1061,11 +1067,11 @@ local function send_query(p, fd, q)
   local sent = false
   while not sent do
     wait(fd, POLLOUT)
-    local _u11 = pq.PQflush(p)
-    if _u11 < 0 then
+    local _u13 = pq.PQflush(p)
+    if _u13 < 0 then
       abort(p, "query")
     else
-      if _u11 == 0 then
+      if _u13 == 0 then
         sent = true
       end
     end
