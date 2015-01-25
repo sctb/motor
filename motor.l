@@ -112,22 +112,21 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define active (fd)
   (get (get threads fd) 'thread))
 
-(define enter (:fd :thread :state :final)
-  (let (x (obj fd: fd
+(define enter (fd thread final)
+  (let (f (or final (fn () (close fd)))
+        x (obj fd: fd
                thread: thread
-               events: POLLNONE
-               state: (or state fd)
-               final: (or final close)))
+               final: f
+               events: POLLNONE))
     (set (get threads fd) x)))
 
 (define-local leave (fd)
-  (let ((:final :state) (get threads fd))
-    (final state))
+  (let (x (get threads fd))
+    (x.final))
   (set (get threads fd) nil))
 
-(define-local run (fd)
-  (let ((thread: t state: x) (get threads fd)
-        |b,e| (resume t x))
+(define-local run (t fd)
+  (let (|b,e| (resume t))
     (unless b
       (pr "error:" e))
     (when (dead? t)
@@ -149,7 +148,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (if (or (dead? t) (error? r))
           (leave fd)
           (or (= v POLLNONE) (> r 0))
-          (run fd)))))
+          (run t fd)))))
 
 (define-local IMMEDIATE 0)
 (define-local NEVER -1)
@@ -181,11 +180,14 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     fd))
 
 (define listen (port f)
-  (define-local connect (fd)
-    (wait fd POLLIN)
-    (enter fd: (accept fd) thread: (thread f))
-    (connect (yield)))
-  (enter fd: (bind port) thread: (thread connect)))
+  (let (fd (bind port))
+    (define-local connect ()
+      (wait fd POLLIN)
+      (let (fd (accept fd)
+            f (fn () (f fd)))
+        (enter fd (thread f)))
+      (connect (yield)))
+    (enter fd (thread connect))))
 
 (define wait (fd v)
   (let (x (get threads fd))

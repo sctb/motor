@@ -82,11 +82,9 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
       (let (x (pq.PQsetnonblocking p 1))
         (unless (= x 0)
           (abort p 'connect)))
-      (let (fd (pq.PQsocket p))
-        (enter fd: fd
-               thread: t
-               state: p
-               final: finish))
+      (let (fd (pq.PQsocket p)
+            f (fn () (finish p)))
+        (enter fd t f))
       p)))
 
 (define-local consume (p fd)

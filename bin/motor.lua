@@ -128,27 +128,20 @@ end
 function active(fd)
   return(threads[fd].thread)
 end
-function enter(...)
-  local _u9 = unstash({...})
-  local fd = _u9.fd
-  local thread = _u9.thread
-  local state = _u9.state
-  local final = _u9.final
-  local x = {events = POLLNONE, fd = fd, thread = thread, state = state or fd, final = final or close}
+function enter(fd, thread, final)
+  local f = final or function ()
+    return(close(fd))
+  end
+  local x = {fd = fd, thread = thread, events = POLLNONE, final = f}
   threads[fd] = x
 end
 local function leave(fd)
-  local _u12 = threads[fd]
-  local state = _u12.state
-  local final = _u12.final
-  final(state)
+  local x = threads[fd]
+  x.final()
   threads[fd] = nil
 end
-local function run(fd)
-  local _u14 = threads[fd]
-  local x = _u14.state
-  local t = _u14.thread
-  local b,e = coroutine.resume(t, x)
+local function run(t, fd)
+  local b,e = coroutine.resume(t)
   if not b then
     print("error:" .. " " .. string(e))
   end
@@ -158,10 +151,10 @@ local function run(fd)
 end
 local function polls()
   local ps = {}
-  local _u16 = threads
+  local _u14 = threads
   local _u1 = nil
-  for _u1 in next, _u16 do
-    local x = _u16[_u1]
+  for _u1 in next, _u14 do
+    local x = _u14[_u1]
     local p = ffi["new"]("struct pollfd")
     p.fd = x.fd
     p.events = x.events
@@ -172,17 +165,17 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u19 = a[i]
-    local fd = _u19.fd
-    local r = _u19.revents
-    local _u20 = threads[fd]
-    local v = _u20.events
-    local t = _u20.thread
+    local _u17 = a[i]
+    local fd = _u17.fd
+    local r = _u17.revents
+    local _u18 = threads[fd]
+    local v = _u18.events
+    local t = _u18.thread
     if dead63(t) or error63(r) then
       leave(fd)
     else
       if v == POLLNONE or r > 0 then
-        run(fd)
+        run(t, fd)
       end
     end
     i = i + 1
@@ -212,20 +205,25 @@ end
 local F_SETFL = 4
 local O_NONBLOCK = 4
 local function accept(fd)
-  local _u25 = c.accept(fd, nil, nil)
-  if _u25 < 0 then
+  local _u23 = c.accept(fd, nil, nil)
+  if _u23 < 0 then
     abort("accept")
   end
-  c.fcntl(_u25, F_SETFL, O_NONBLOCK)
-  return(_u25)
+  c.fcntl(_u23, F_SETFL, O_NONBLOCK)
+  return(_u23)
 end
 function listen(port, f)
-  local function connect(fd)
+  local fd = bind(port)
+  local function connect()
     wait(fd, POLLIN)
-    enter({_stash = true, fd = accept(fd), thread = thread(f)})
+    local fd = accept(fd)
+    local f = function ()
+      return(f(fd))
+    end
+    enter(fd, thread(f))
     return(connect(coroutine.yield()))
   end
-  return(enter({_stash = true, fd = bind(port), thread = thread(connect)}))
+  return(enter(fd, thread(connect)))
 end
 function wait(fd, v)
   local x = threads[fd]
@@ -248,10 +246,10 @@ end
 function send(fd, b)
   local i = 0
   local n = _35(b)
-  local _u31 = ffi.cast("const char*", b)
+  local _u30 = ffi.cast("const char*", b)
   while i < n do
     wait(fd, POLLOUT)
-    local x = c.write(fd, _u31 + i, n - i)
+    local x = c.write(fd, _u30 + i, n - i)
     if x < 0 then
       abort()
     end
@@ -443,7 +441,10 @@ function connect(s, t)
       abort(p, "connect")
     end
     local fd = pq.PQsocket(p)
-    enter({_stash = true, fd = fd, thread = t, state = p, final = finish})
+    local f = function ()
+      return(finish(p))
+    end
+    enter(fd, t, f)
     return(p)
   end
 end
@@ -475,11 +476,11 @@ local function result(r)
   local x = pq.PQresultStatus(r)
   if x == pq.PGRES_COMMAND_OK then
     local a = cstr(pq.PQcmdTuples(r))
-    local _u13
+    local _u14
     if some63(a) then
-      _u13 = number(a)
+      _u14 = number(a)
     end
-    return({size = _u13, command = cstr(pq.PQcmdStatus(r))})
+    return({size = _u14, command = cstr(pq.PQcmdStatus(r))})
   else
     if x == pq.PGRES_TUPLES_OK or x == pq.PGRES_SINGLE_TUPLE then
       local n = pq.PQntuples(r)
@@ -501,11 +502,11 @@ local function send_query(p, fd, q)
   local sent = false
   while not sent do
     wait(fd, POLLOUT)
-    local _u10 = pq.PQflush(p)
-    if _u10 < 0 then
+    local _u11 = pq.PQflush(p)
+    if _u11 < 0 then
       abort(p, "query")
     else
-      if _u10 == 0 then
+      if _u11 == 0 then
         sent = true
       end
     end
