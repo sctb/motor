@@ -1,50 +1,61 @@
 ;; -*- mode: lisp -*-
 
-(define-local sep "\r\n")
-(define-local sep2 (cat sep sep))
+(define motor (require 'motor))
+(define stream (require 'stream))
 
-(define-local words (x)
+(define sep "\r\n")
+(define sep2 (cat sep sep))
+
+(define words (x)
   (split x " "))
 
-(define-local cleave (x sep)
+(define cleave (x sep)
   (let (n (search x sep))
     (if (nil? n) x
       (list (clip x 0 n)
             (clip x (+ n (# sep)))))))
 
 (define start (s)
-  (let ((m p v) (words (line s sep)))
+  (let ((m p v) (words (stream.line s sep)))
     (obj method: m
          path: p
          version: v)))
 
 (define headers (s)
   (let (x (obj)
-        b (line s sep2))
+        b (stream.line s sep2))
     (each (_ l) (split b sep)
       (let ((k v) (cleave l ": "))
         (set (get x k) v)))
     x))
 
 (define body (s n)
-  (amount s n))
+  (stream.amount s n))
 
-(define-local response (data code)
+(define response (data code)
   (cat "HTTP/1.1 " code sep
        "Content-Length: " (# data) sep2
        data))
 
 (define respond (s data)
-  (emit s (response data "200 OK")))
+  (stream.emit s (response data "200 OK")))
 
 (define problem (s data)
-  (emit s (response data "500 Internal Server Error")))
+  (stream.emit s (response data "500 Internal Server Error")))
 
 (define unknown (s)
-  (emit s (response "Unknown" "404 Not Found")))
+  (stream.emit s (response "Unknown" "404 Not Found")))
 
 (define serve (port f)
-  (define-local connect (fd)
-    (f (stream fd)))
-  (listen port connect)
-  (loop))
+  (define connect (fd)
+    (f (stream.create fd)))
+  (motor.listen port connect)
+  (motor.start))
+
+(export start
+        headers
+        body
+        respond
+        problem
+        unknown
+        serve)

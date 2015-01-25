@@ -1,6 +1,9 @@
 ;; -*- mode: lisp -*-
 
-(define-c |
+(define ffi (require 'ffi))
+(define motor (require 'motor))
+
+(define-c ffi |
 struct pg_conn;
 struct pg_result;
 
@@ -64,16 +67,17 @@ char *PQfname(const PGresult *res, int column_number);
 char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 |)
 
-(define-local pq (ffi.load 'pq))
+(define pq (ffi.load 'pq))
+(define cstr ffi.string)
 
-(define-local abort (p name)
+(define abort (p name)
   (let (e (cstr (pq.PQerrorMessage p)))
     (error (cat (or name 'error) ": " e))))
 
-(define-local connected? (p)
+(define connected? (p)
   (= (pq.PQstatus p) pq.CONNECTION_OK))
 
-(define-local finish (p)
+(define finish (p)
   (pq.PQfinish p))
 
 (define connect (s t)
@@ -87,16 +91,16 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
           (set t (thread (fn () (f p))))))
       (let (fd (pq.PQsocket p)
             f (fn () (finish p)))
-        (enter fd t f))
+        (motor.enter fd t f))
       p)))
 
-(define-local consume (p fd)
-  (wait fd POLLIN)
+(define consume (p fd)
+  (motor.wait fd)
   (let (x (pq.PQconsumeInput p))
     (when (= x 0)
       (abort p 'consume))))
 
-(define-local get-rows (res n m)
+(define get-rows (res n m)
   (let (rs ())
     (for (i n)
       (let (r (obj))
@@ -107,7 +111,7 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
         (add rs r)))
     rs))
 
-(define-local result (r)
+(define result (r)
   (let (x (pq.PQresultStatus r))
     (if (= x pq.PGRES_COMMAND_OK)
         (let (a (cstr (pq.PQcmdTuples r)))
@@ -122,21 +126,21 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
                rows: (get-rows r n m)))
       (obj error: (cstr (pq.PQresultErrorMessage r))))))
 
-(define-local clear (r)
+(define clear (r)
   (pq.PQclear r))
 
-(define-local send-query (p fd q)
+(define send-query (p fd q)
   (let (x (pq.PQsendQuery p q))
     (when (= x 0)
       (abort p 'query)))
   (let (sent #f)
     (while (not sent)
-      (wait fd POLLOUT)
+      (motor.wait fd 'out)
       (let (x (pq.PQflush p))
         (if (< x 0) (abort p 'query)
             (= x 0) (set sent #t))))))
 
-(define-local get-results (p fd)
+(define get-results (p fd)
   (let (rs ())
     (while #t
       (if (= (pq.PQisBusy p) 0)
@@ -154,3 +158,5 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
           xs (map result rs))
       (map clear rs)
       xs)))
+
+(export connect query)

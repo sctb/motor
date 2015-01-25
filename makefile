@@ -1,46 +1,29 @@
 .PHONY: all clean
 
 LUMEN := LUMEN_HOST=luajit lumen
-RUNTIME := lib/lumen/runtime.lua lib/lumen/io.lua
-LIBS :=	obj/lib.lua	\
-	obj/motor.lua	\
-	obj/stream.lua	\
-	obj/http.lua	\
-	obj/pq.lua
+MODS :=	bin/motor.lua	\
+	bin/stream.lua	\
+	bin/http.lua	\
+	bin/pq.lua
 
-all: bin/motor.lua bin/echo.lua bin/serve.lua
+all: $(MODS)
 
 clean:
-	@git checkout bin/echo.lua bin/serve.lua bin/motor.lua
+	@git checkout bin/*.lua
 	@rm -f obj/*
 
-bin/motor.lua: $(LIBS)
+bin/pq.lua: pq.l obj/lib.lua
 	@echo $@
-	@cat $^ > $@.tmp
-	@mv $@.tmp $@
+	@$(LUMEN) obj/lib.lua -c $< -o $@ -t lua
 
-bin/echo.lua: bin/motor.lua obj/echo.lua
+bin/motor.lua: motor.l obj/lib.lua
 	@echo $@
-	@cat $(RUNTIME) $^ > $@.tmp
-	@mv $@.tmp $@
-
-bin/serve.lua: bin/motor.lua obj/serve.lua
-	@echo $@
-	@cat $(RUNTIME) $^ > $@.tmp
-	@mv $@.tmp $@
-
-obj/echo.lua: echo.l obj/lib.lua
-	@echo "  $@"
-	@$(LUMEN) `echo $^ | cut -d ' ' -f 2-` -c $< -o $@ -t lua
-
-obj/pq.lua: pq.l obj/lib.lua
-	@echo "  $@"
-	@$(LUMEN) `echo $^ | cut -d ' ' -f 2-` -c $< -o $@ -t lua
-
-obj/motor.lua: motor.l obj/lib.lua
-	@echo "  $@"
-	@$(LUMEN) `echo $^ | cut -d ' ' -f 2-` -c $< -o $@ -t lua
+	@$(LUMEN) obj/lib.lua -c $< -o $@ -t lua
 
 obj/%.lua : %.l
 	@echo "  $@"
+	@$(LUMEN) -c $< -o $@ -t lua
+
+bin/%.lua : %.l
+	@echo $@
 	@$(LUMEN) -c $< -o $@ -t lua

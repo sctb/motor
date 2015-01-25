@@ -1,17 +1,19 @@
 ;; -*- mode: lisp -*-
 
-(define-local stream (fd)
+(define motor (require 'motor))
+
+(define create (fd)
   (obj fd: fd
        buffer: ""
        pos: 0))
 
-(define-local fill (s)
-  (let (b (receive s.fd))
+(define fill (s)
+  (let (b (motor.receive s.fd))
     (when b
       (cat! s.buffer b)
       #t)))
 
-(define-local before (s pat)
+(define before (s pat)
   (let (i nil)
     (while (nil? i)
       (let (n (search s.buffer pat s.pos))
@@ -24,13 +26,13 @@
         (set s.pos i)
         (clip s.buffer n i)))))
 
-(define-local line (s pat)
+(define line (s pat)
   (let (p (or pat "\n")
         b (before s p))
     (inc s.pos (# p))
     b))
 
-(define-local amount (s n)
+(define amount (s n)
   (while (< (- (# s.buffer) s.pos) n)
     (unless (fill s)
       (break)))
@@ -39,4 +41,9 @@
     b))
 
 (define emit (s b)
-  (send s.fd b))
+  (motor.send s.fd b))
+
+(export create
+        line
+        amount
+        emit)

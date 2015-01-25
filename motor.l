@@ -1,6 +1,8 @@
 ;; -*- mode: lisp -*-
 
-(define-c |
+(define ffi (require 'ffi))
+
+(define-c ffi |
 int socket(int domain, int type, int protocol);
 int fcntl(int fildes, int cmd, ...);
 
@@ -58,25 +60,26 @@ ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 |)
 
-(define-local c ffi.C)
+(define cstr ffi.string)
+(define c ffi.C)
 
-(define-local abort (name)
+(define abort (name)
   (let (e (cstr (c.strerror (ffi.errno))))
     (error (cat (or name 'error) ": " e))))
 
-(define-local PF_INET 2)
-(define-local AF_INET 2)
-(define-local INADDR_ANY 0)
-(define-local SOCK_STREAM 1)
-(define-local IPPROTO_TCP 6)
+(define PF_INET 2)
+(define AF_INET 2)
+(define INADDR_ANY 0)
+(define SOCK_STREAM 1)
+(define IPPROTO_TCP 6)
 
-(define-local socket ()
+(define socket ()
   (let (fd (c.socket PF_INET SOCK_STREAM IPPROTO_TCP))
     (when (< fd 0)
       (abort 'socket))
     fd))
 
-(define-local bind (port)
+(define bind (port)
   (let (fd (socket)
         p (ffi.new "struct sockaddr_in[1]")
         n (ffi.sizeof "struct sockaddr_in")
@@ -93,19 +96,19 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
         (abort 'listen)))
     fd))
 
-(define-local POLLNONE 0x0000)
-(define-local POLLIN 0x0001)
-(define-local POLLOUT 0x0004)
-(define-local POLLERR 0x0008)
-(define-local POLLHUP 0x0010)
-(define-local POLLNVAL 0x0020)
+(define POLLNONE 0x0000)
+(define POLLIN 0x0001)
+(define POLLOUT 0x0004)
+(define POLLERR 0x0008)
+(define POLLHUP 0x0010)
+(define POLLNVAL 0x0020)
 
-(define-local threads (obj))
+(define threads (obj))
 
-(define-local error? (v)
+(define error? (v)
   (> v 0x0007))
 
-(define-local close (fd)
+(define close (fd)
   (when (< (c.close fd) 0)
     (abort 'close)))
 
@@ -120,19 +123,22 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
                events: POLLNONE))
     (set (get threads fd) x)))
 
-(define-local leave (fd)
+(define leave (fd)
   (let (x (get threads fd))
     (x.final))
   (set (get threads fd) nil))
 
-(define-local run (t fd)
+(define dead? (c)
+  (= (coroutine.status c) 'dead))
+
+(define run (t fd)
   (let (|b,e| (resume t))
     (unless b
       (pr "error:" e))
     (when (dead? t)
       (leave fd))))
 
-(define-local polls ()
+(define polls ()
   (let (ps ())
     (each (_ x) threads
       (let (p (ffi.new "struct pollfd"))
@@ -141,7 +147,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
         (add ps p)))
     ps))
 
-(define-local tick (a n)
+(define tick (a n)
   (for (i n)
     (let ((:fd revents: r) (get a i)
           (thread: t events: v) (get threads fd))
@@ -150,17 +156,17 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
           (or (= v POLLNONE) (> r 0))
           (run t fd)))))
 
-(define-local IMMEDIATE 0)
-(define-local NEVER -1)
+(define IMMEDIATE 0)
+(define NEVER -1)
 
-(define-local timeout ()
+(define timeout ()
   (if (find (fn (x)
               (= x.events POLLNONE))
             threads)
       IMMEDIATE
     NEVER))
 
-(define loop ()
+(define start ()
   (while (not (empty? threads))
     (let (p (polls)
           n (# p)
@@ -169,35 +175,36 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (c.poll a n t)
       (tick a n))))
 
-(define-local F_SETFL 4)
-(define-local O_NONBLOCK 0x0004)
+(define F_SETFL 4)
+(define O_NONBLOCK 0x0004)
 
-(define-local accept (fd)
+(define accept (fd)
   (let (fd (c.accept fd nil nil))
     (when (< fd 0)
       (abort 'accept))
     (c.fcntl fd F_SETFL O_NONBLOCK)
     fd))
 
+(define wait (fd o)
+  (let (x (get threads fd)
+        v (if (= o 'out) POLLOUT POLLIN))
+    (set x.events v))
+  (yield))
+
 (define listen (port f)
   (let (fd (bind port))
-    (define-local connect ()
-      (wait fd POLLIN)
+    (define connect ()
+      (wait fd)
       (let (fd (accept fd)
             f (fn () (f fd)))
         (enter fd (thread f)))
       (connect (yield)))
     (enter fd (thread connect))))
 
-(define wait (fd v)
-  (let (x (get threads fd))
-    (set x.events v))
-  (yield))
-
-(define-local BUFFER_SIZE 1024)
+(define BUFFER_SIZE 1024)
 
 (define receive (fd)
-  (wait fd POLLIN)
+  (wait fd)
   (let (b (ffi.new "char[?]" BUFFER_SIZE)
         x (c.read fd b BUFFER_SIZE))
     (if (< x 0) (abort)
@@ -207,8 +214,15 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (let (i 0 n (# b)
         b (ffi.cast "const char*" b))
     (while (< i n)
-      (wait fd POLLOUT)
+      (wait fd 'out)
       (let (x (c.write fd (+ b i) (- n i)))
         (when (< x 0)
           (abort))
         (inc i x)))))
+
+(export enter
+        wait
+        listen
+        receive
+        send
+        start)
