@@ -23,7 +23,6 @@ end
 local function headers(s)
   local x = {}
   local b = stream.line(s, sep2)
-  print(b)
   local _u8 = split(b, sep)
   local _u1 = nil
   for _u1 in next, _u8 do

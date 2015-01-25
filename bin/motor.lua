@@ -249,4 +249,4 @@ local function send(fd, b)
     i = i + x
   end
 end
-return({enter = enter, receive = receive, send = send, wait = wait, start = start, listen = listen})
+return({active = active, enter = enter, listen = listen, send = send, wait = wait, start = start, receive = receive})

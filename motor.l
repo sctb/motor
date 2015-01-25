@@ -220,7 +220,8 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
           (abort))
         (inc i x)))))
 
-(export enter
+(export active
+        enter
         wait
         listen
         receive
