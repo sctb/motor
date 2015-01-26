@@ -28,17 +28,8 @@ struct in_addr {
   in_addr_t     s_addr;
 };
 
-struct sockaddr_in {
-  uint8_t               sin_len;
-  sa_family_t           sin_family;
-  in_port_t             sin_port;
-  struct in_addr        sin_addr;
-  char                  sin_zero[8];
-};
-
-uint32_t htonl(uint32_t hostlong);
 uint16_t htons(uint16_t hostshort);
-char * inet_ntoa(struct in_addr in);
+uint32_t htonl(uint32_t hostlong);
 
 typedef unsigned int nfds_t;
 
@@ -60,6 +51,8 @@ ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 |)
 
+(require 'system)
+
 (define cstr ffi.string)
 (define c ffi.C)
 
@@ -67,14 +60,13 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (let (e (cstr (c.strerror (ffi.errno))))
     (error (cat (or name 'error) ": " e))))
 
-(define PF_INET 2)
 (define AF_INET 2)
-(define INADDR_ANY 0)
 (define SOCK_STREAM 1)
 (define IPPROTO_TCP 6)
+(define INADDR_ANY 0)
 
 (define socket ()
-  (let (fd (c.socket PF_INET SOCK_STREAM IPPROTO_TCP))
+  (let (fd (c.socket AF_INET SOCK_STREAM IPPROTO_TCP))
     (when (< fd 0)
       (abort 'socket))
     fd))
@@ -86,7 +78,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
         a (get p 0))
     (set a.sin_family AF_INET)
     (set a.sin_port (c.htons port))
-    (set a.sin_addr.s_addr INADDR_ANY)
+    (set a.sin_addr.s_addr (c.htonl INADDR_ANY))
     (let (p (ffi.cast "struct sockaddr*" p)
           x (c.bind fd p n))
       (when (< x 0)

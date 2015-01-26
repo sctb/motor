@@ -25,17 +25,8 @@ struct in_addr {
   in_addr_t     s_addr;
 };
 
-struct sockaddr_in {
-  uint8_t               sin_len;
-  sa_family_t           sin_family;
-  in_port_t             sin_port;
-  struct in_addr        sin_addr;
-  char                  sin_zero[8];
-};
-
-uint32_t htonl(uint32_t hostlong);
 uint16_t htons(uint16_t hostshort);
-char * inet_ntoa(struct in_addr in);
+uint32_t htonl(uint32_t hostlong);
 
 typedef unsigned int nfds_t;
 
@@ -56,19 +47,19 @@ typedef int ssize_t;
 ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 ]]
+require("system")
 local cstr = ffi.string
 local c = ffi.C
 local function abort(name)
   local e = cstr(c.strerror(ffi.errno()))
   error((name or "error") .. ": " .. e)
 end
-local PF_INET = 2
 local AF_INET = 2
-local INADDR_ANY = 0
 local SOCK_STREAM = 1
 local IPPROTO_TCP = 6
+local INADDR_ANY = 0
 local function socket()
-  local fd = c.socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)
+  local fd = c.socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
   if fd < 0 then
     abort("socket")
   end
@@ -81,7 +72,7 @@ local function bind(port)
   local a = p[0]
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
-  a.sin_addr.s_addr = INADDR_ANY
+  a.sin_addr.s_addr = c.htonl(INADDR_ANY)
   local _u5 = ffi.cast("struct sockaddr*", p)
   local x = c.bind(fd, _u5, n)
   if x < 0 then
