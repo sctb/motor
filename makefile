@@ -23,11 +23,11 @@ bin/motor.lua: motor.l obj/lib.lua
 	@$(LUMEN) obj/lib.lua -c $< -o $@ -t lua
 
 bin/linux/%.lua : lib/linux/%.l obj/lib.lua
-	@echo "  $@"
+	@echo $@
 	@$(LUMEN) obj/lib.lua -c $< -o $@ -t lua
 
 bin/darwin/%.lua : lib/darwin/%.l obj/lib.lua
-	@echo "  $@"
+	@echo $@
 	@$(LUMEN) obj/lib.lua -c $< -o $@ -t lua
 
 obj/%.lua : %.l
