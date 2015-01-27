@@ -39,7 +39,7 @@ local function amount(s, n)
       break
     end
   end
-  local b = clip(s.buffer, s.pos)
+  local b = clip(s.buffer, s.pos, s.pos + n)
   s.pos = s.pos + _35(b)
   return(b)
 end

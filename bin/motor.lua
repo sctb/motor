@@ -218,7 +218,7 @@ local BUFFER_SIZE = 1024
 local function receive(fd)
   wait(fd)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
-  local x = c.read(fd, b, BUFFER_SIZE)
+  local x = c.read(fd, b, BUFFER_SIZE - 1)
   if x < 0 then
     return(abort())
   else

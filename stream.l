@@ -36,7 +36,7 @@
   (while (< (- (# s.buffer) s.pos) n)
     (unless (fill s)
       (break)))
-  (let (b (clip s.buffer s.pos))
+  (let (b (clip s.buffer s.pos (+ s.pos n)))
     (inc s.pos (# b))
     b))
 

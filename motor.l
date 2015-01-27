@@ -198,7 +198,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define receive (fd)
   (wait fd)
   (let (b (ffi.new "char[?]" BUFFER_SIZE)
-        x (c.read fd b BUFFER_SIZE))
+        x (c.read fd b (- BUFFER_SIZE 1)))
     (if (< x 0) (abort)
         (> x 0) (cstr b))))
 
