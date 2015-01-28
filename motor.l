@@ -120,6 +120,10 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (x.final))
   (set (get threads fd) nil))
 
+(define cleanup ()
+  (each (fd _) threads
+    (leave fd)))
+
 (define dead? (c)
   (= (coroutine.status c) 'dead))
 
@@ -158,7 +162,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       IMMEDIATE
     NEVER))
 
-(define start ()
+(define loop ()
   (while (not (empty? threads))
     (let (p (polls)
           n (# p)
@@ -166,6 +170,12 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
           t (timeout p))
       (c.poll a n t)
       (tick a n))))
+
+(define start ()
+  (let ((_ e) (guard (loop)))
+    (when e
+      (print (cat "error: " e))))
+  (cleanup))
 
 (define F_SETFL 4)
 (define O_NONBLOCK 0x0004)

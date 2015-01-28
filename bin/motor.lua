@@ -73,8 +73,8 @@ local function bind(port)
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = c.htonl(INADDR_ANY)
-  local _u5 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(fd, _u5, n)
+  local _u7 = ffi.cast("struct sockaddr*", p)
+  local x = c.bind(fd, _u7, n)
   if x < 0 then
     abort("bind")
   end
@@ -114,13 +114,21 @@ local function leave(fd)
   x.final()
   threads[fd] = nil
 end
+local function cleanup()
+  local _u15 = threads
+  local fd = nil
+  for fd in next, _u15 do
+    local _u1 = _u15[fd]
+    leave(fd)
+  end
+end
 local function dead63(c)
   return(coroutine.status(c) == "dead")
 end
 local function run(t, fd)
   local b,e = coroutine.resume(t)
   if not b then
-    print("error:" .. " " .. string(e))
+    pr("error:", e)
   end
   if dead63(t) then
     return(leave(fd))
@@ -128,10 +136,10 @@ local function run(t, fd)
 end
 local function polls()
   local ps = {}
-  local _u15 = threads
-  local _u1 = nil
-  for _u1 in next, _u15 do
-    local x = _u15[_u1]
+  local _u20 = threads
+  local _u2 = nil
+  for _u2 in next, _u20 do
+    local x = _u20[_u2]
     local p = ffi["new"]("struct pollfd")
     p.fd = x.fd
     p.events = x.events
@@ -142,12 +150,12 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u18 = a[i]
-    local fd = _u18.fd
-    local r = _u18.revents
-    local _u19 = threads[fd]
-    local v = _u19.events
-    local t = _u19.thread
+    local _u23 = a[i]
+    local fd = _u23.fd
+    local r = _u23.revents
+    local _u24 = threads[fd]
+    local v = _u24.events
+    local t = _u24.thread
     if dead63(t) or error63(r) then
       leave(fd)
     else
@@ -169,7 +177,7 @@ local function timeout()
     return(NEVER)
   end
 end
-local function start()
+local function loop()
   while not empty63(threads) do
     local p = polls()
     local n = _35(p)
@@ -179,25 +187,37 @@ local function start()
     tick(a, n)
   end
 end
+local function start()
+  local _u30,_u31 = xpcall(function ()
+    return(loop())
+  end, _37message_handler)
+  local _u29 = {_u30, _u31}
+  local _u3 = _u29[1]
+  local e = _u29[2]
+  if e then
+    print("error: " .. e)
+  end
+  return(cleanup())
+end
 local F_SETFL = 4
 local O_NONBLOCK = 4
 local function accept(fd)
-  local _u24 = c.accept(fd, nil, nil)
-  if _u24 < 0 then
+  local _u35 = c.accept(fd, nil, nil)
+  if _u35 < 0 then
     abort("accept")
   end
-  c.fcntl(_u24, F_SETFL, O_NONBLOCK)
-  return(_u24)
+  c.fcntl(_u35, F_SETFL, O_NONBLOCK)
+  return(_u35)
 end
 local function wait(fd, o)
   local x = threads[fd]
-  local _u32
+  local _u43
   if o == "out" then
-    _u32 = POLLOUT
+    _u43 = POLLOUT
   else
-    _u32 = POLLIN
+    _u43 = POLLIN
   end
-  local v = _u32
+  local v = _u43
   x.events = v
   return(coroutine.yield())
 end
@@ -230,10 +250,10 @@ end
 local function send(fd, b)
   local i = 0
   local n = _35(b)
-  local _u31 = ffi.cast("const char*", b)
+  local _u42 = ffi.cast("const char*", b)
   while i < n do
     wait(fd, "out")
-    local x = c.write(fd, _u31 + i, n - i)
+    local x = c.write(fd, _u42 + i, n - i)
     if x < 0 then
       abort()
     end
