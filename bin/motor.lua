@@ -17,6 +17,13 @@ int accept(
   struct sockaddr *restrict address,
   socklen_t *restrict address_len);
 
+int setsockopt(
+  int socket,
+  int level,
+  int option_name,
+  const void *option_value,
+  socklen_t option_len);
+
 typedef uint8_t sa_family_t;
 typedef uint16_t in_port_t;
 typedef uint32_t in_addr_t;
@@ -62,6 +69,12 @@ local function socket()
   local fd = c.socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
   if fd < 0 then
     abort("socket")
+  end
+  local a = ffi["new"]("int[1]", 1)
+  local n = ffi.sizeof("int")
+  local x = c.setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, a, n)
+  if x < 0 then
+    abort("setsockopt")
   end
   return(fd)
 end

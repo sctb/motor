@@ -8,3 +8,5 @@ struct sockaddr_in {
   char                  sin_zero[8];
 };
 ]]
+SOL_SOCKET = 65535
+SO_REUSEADDR = 4

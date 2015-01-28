@@ -7,3 +7,5 @@ struct sockaddr_in {
   unsigned char         sin_zero[9];
 };
 ]]
+SOL_SOCKET = 1
+SO_REUSEADDR = 2

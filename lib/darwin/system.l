@@ -11,3 +11,6 @@ struct sockaddr_in {
   char                  sin_zero[8];
 };
 |)
+
+(define-global SOL_SOCKET 0xffff)
+(define-global SO_REUSEADDR 0x0004)

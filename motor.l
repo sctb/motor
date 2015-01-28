@@ -20,6 +20,13 @@ int accept(
   struct sockaddr *restrict address,
   socklen_t *restrict address_len);
 
+int setsockopt(
+  int socket,
+  int level,
+  int option_name,
+  const void *option_value,
+  socklen_t option_len);
+
 typedef uint8_t sa_family_t;
 typedef uint16_t in_port_t;
 typedef uint32_t in_addr_t;
@@ -69,6 +76,11 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (let (fd (c.socket AF_INET SOCK_STREAM IPPROTO_TCP))
     (when (< fd 0)
       (abort 'socket))
+    (let (a (ffi.new "int[1]" 1)
+          n (ffi.sizeof "int")
+          x (c.setsockopt fd SOL_SOCKET SO_REUSEADDR a n))
+      (when (< x 0)
+        (abort 'setsockopt)))
     fd))
 
 (define bind (port)

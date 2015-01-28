@@ -10,3 +10,6 @@ struct sockaddr_in {
   unsigned char         sin_zero[9];
 };
 |)
+
+(define-global SOL_SOCKET 1)
+(define-global SO_REUSEADDR 2)
