@@ -142,7 +142,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define run (t fd)
   (let (|b,e| (resume t))
     (unless b
-      (pr "error:" e))
+      (print (cat "error:" e)))
     (when (dead? t)
       (leave fd))))
 

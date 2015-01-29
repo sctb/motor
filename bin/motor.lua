@@ -141,7 +141,7 @@ end
 local function run(t, fd)
   local b,e = coroutine.resume(t)
   if not b then
-    pr("error:", e)
+    print("error:" .. e)
   end
   if dead63(t) then
     return(leave(fd))
