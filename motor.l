@@ -215,14 +215,14 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (connect (yield)))
     (enter fd (thread connect))))
 
-(define BUFFER_SIZE 4096)
+(define BUFFER_SIZE 8192)
 
 (define receive (fd)
   (wait fd)
   (let (b (ffi.new "char[?]" BUFFER_SIZE)
-        x (c.read fd b (- BUFFER_SIZE 1)))
+        x (c.read fd b BUFFER_SIZE))
     (if (< x 0) (abort)
-        (> x 0) (cstr b))))
+        (> x 0) (cstr b x))))
 
 (define send (fd b)
   (let (i 0 n (# b)

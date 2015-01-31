@@ -11,7 +11,7 @@
   (let (b (motor.receive s.fd))
     (when b
       (cat! s.buffer b)
-      #t)))
+      true)))
 
 (define before (s pat)
   (let (i nil)

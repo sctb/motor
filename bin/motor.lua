@@ -247,16 +247,16 @@ local function listen(port, f)
   end
   return(enter(fd, coroutine.create(connect)))
 end
-local BUFFER_SIZE = 4096
+local BUFFER_SIZE = 8192
 local function receive(fd)
   wait(fd)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
-  local x = c.read(fd, b, BUFFER_SIZE - 1)
+  local x = c.read(fd, b, BUFFER_SIZE)
   if x < 0 then
     return(abort())
   else
     if x > 0 then
-      return(cstr(b))
+      return(cstr(b, x))
     end
   end
 end

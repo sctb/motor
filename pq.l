@@ -133,16 +133,16 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
   (let (x (pq.PQsendQuery p q))
     (when (= x 0)
       (abort p 'query)))
-  (let (sent #f)
+  (let (sent false)
     (while (not sent)
       (motor.wait fd 'out)
       (let (x (pq.PQflush p))
         (if (< x 0) (abort p 'query)
-            (= x 0) (set sent #t))))))
+            (= x 0) (set sent true))))))
 
 (define get-results (p fd)
   (let (rs ())
-    (while #t
+    (while true
       (if (= (pq.PQisBusy p) 0)
           (let (r (pq.PQgetResult p))
             (if (is? r)
