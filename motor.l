@@ -215,7 +215,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (connect (yield)))
     (enter fd (thread connect))))
 
-(define BUFFER_SIZE 1024)
+(define BUFFER_SIZE 4096)
 
 (define receive (fd)
   (wait fd)

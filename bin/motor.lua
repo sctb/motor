@@ -247,7 +247,7 @@ local function listen(port, f)
   end
   return(enter(fd, coroutine.create(connect)))
 end
-local BUFFER_SIZE = 1024
+local BUFFER_SIZE = 4096
 local function receive(fd)
   wait(fd)
   local b = ffi["new"]("char[?]", BUFFER_SIZE)
