@@ -225,13 +225,13 @@ local function accept(fd)
 end
 local function wait(fd, o)
   local x = threads[fd]
-  local _u43
+  local _u44
   if o == "out" then
-    _u43 = POLLOUT
+    _u44 = POLLOUT
   else
-    _u43 = POLLIN
+    _u44 = POLLIN
   end
-  local v = _u43
+  local v = _u44
   x.events = v
   return(coroutine.yield())
 end
@@ -268,17 +268,21 @@ local function receive(fd)
     return(buffer.string(b))
   end
 end
+local function write(fd, p, n)
+  wait(fd, "out")
+  local x = c.write(fd, p, n)
+  if x < 0 then
+    abort("send")
+  end
+  return(x)
+end
 local function send(fd, s)
   local i = 0
   local n = _35(s)
   local b = ffi.cast("const char*", s)
   while i < n do
-    wait(fd, "out")
-    local x = c.write(fd, b + i, n - i)
-    if x < 0 then
-      abort("send")
-    end
+    local x = write(fd, b + i, n - i)
     i = i + x
   end
 end
-return({active = active, enter = enter, listen = listen, send = send, wait = wait, start = start, receive = receive})
+return({enter = enter, write = write, read = read, send = send, active = active, listen = listen, wait = wait, start = start, receive = receive})

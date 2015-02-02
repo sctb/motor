@@ -233,20 +233,26 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (when (> n 0)
       (buffer.string b))))
 
+(define write (fd p n)
+  (wait fd 'out)
+  (let (x (c.write fd p n))
+    (when (< x 0)
+      (abort 'send))
+    x))
+
 (define send (fd s)
   (let (i 0 n (# s)
         b (ffi.cast "const char*" s))
     (while (< i n)
-      (wait fd 'out)
-      (let (x (c.write fd (+ b i) (- n i)))
-        (when (< x 0)
-          (abort 'send))
+      (let (x (write fd (+ b i) (- n i)))
         (inc i x)))))
 
 (export active
         enter
         wait
         listen
+        read
         receive
+        write
         send
         start)

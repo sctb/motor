@@ -1,30 +1,31 @@
 ;; -*- mode: lisp -*-
 
 (define motor (require 'motor))
+(define buffer (require 'buffer))
 
 (define create (fd)
   (obj fd: fd
-       buffer: ""
+       buffer: (buffer.create)
        pos: 0))
 
 (define fill (s)
-  (let (b (motor.receive s.fd))
-    (when b
-      (cat! s.buffer b)
-      true)))
+  (when (buffer.full? s.buffer)
+    (buffer.extend s.buffer))
+  (> (motor.read s.fd s.buffer) 0))
 
 (define before (s pat)
-  (let (i nil)
-    (while (nil? i)
-      (let (n (search s.buffer pat s.pos))
-        (if (nil? n)
+  (let (n nil)
+    (while (nil? n)
+      (let (x (buffer.string s.buffer s.pos)
+            m (search x pat))
+        (if (nil? m)
             (unless (fill s)
-              (set i -1))
-          (set i n))))
-    (when (>= i 0)
-      (let (n s.pos)
-        (set s.pos i)
-        (clip s.buffer n i)))))
+              (set n -1))
+          (set n m))))
+    (when (>= n 0)
+      (let (i s.pos)
+        (inc s.pos n)
+        (buffer.string s.buffer i n)))))
 
 (define line (s pat)
   (let (p (or pat "\n")
@@ -33,12 +34,15 @@
     b))
 
 (define amount (s n)
-  (while (< (- (# s.buffer) s.pos) n)
-    (unless (fill s)
-      (break)))
-  (let (b (clip s.buffer s.pos (+ s.pos n)))
-    (inc s.pos (# b))
-    b))
+  (let (b s.buffer)
+    (when (< (buffer.space b) n)
+      (buffer.extend b n))
+    (while (< (- (buffer.length b) s.pos) n)
+      (unless (fill s)
+        (break)))
+    (let (x (buffer.string b s.pos (+ s.pos n)))
+      (inc s.pos (# x))
+      x)))
 
 (define emit (s b)
   (motor.send s.fd b))
