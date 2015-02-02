@@ -4,6 +4,7 @@ LUMEN := LUMEN_HOST=luajit lumen
 MODS :=	bin/motor.lua		\
 	bin/linux/system.lua	\
 	bin/darwin/system.lua	\
+	bin/buffer.lua		\
 	bin/stream.lua		\
 	bin/http.lua		\
 	bin/pq.lua

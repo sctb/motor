@@ -1,6 +1,7 @@
 ;; -*- mode: lisp -*-
 
 (define ffi (require 'ffi))
+(define buffer (require 'buffer))
 
 (define-c ffi |
 int socket(int domain, int type, int protocol);
@@ -215,14 +216,22 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (connect (yield)))
     (enter fd (thread connect))))
 
-(define BUFFER_SIZE 8192)
+(define read (fd b)
+  (wait fd)
+  (let (n (buffer.space b))
+    (when (> n 0)
+      (let (p (buffer.pointer b)
+            x (c.read fd p n))
+        (when (< x 0)
+          (abort 'read))
+        (inc b.length x)
+        x))))
 
 (define receive (fd)
-  (wait fd)
-  (let (b (ffi.new "char[?]" BUFFER_SIZE)
-        x (c.read fd b BUFFER_SIZE))
-    (if (< x 0) (abort)
-        (> x 0) (cstr b x))))
+  (let (b (buffer.create)
+        n (read fd b))
+    (when (> n 0)
+      (buffer.string b))))
 
 (define send (fd b)
   (let (i 0 n (# b)
@@ -231,7 +240,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (wait fd 'out)
       (let (x (c.write fd (+ b i) (- n i)))
         (when (< x 0)
-          (abort))
+          (abort 'send))
         (inc i x)))))
 
 (export active

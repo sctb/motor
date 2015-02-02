@@ -1,4 +1,5 @@
 local ffi = require("ffi")
+local buffer = require("buffer")
 ffi.cdef[[
 int socket(int domain, int type, int protocol);
 int fcntl(int fildes, int cmd, ...);
@@ -224,13 +225,13 @@ local function accept(fd)
 end
 local function wait(fd, o)
   local x = threads[fd]
-  local _u43
+  local _u44
   if o == "out" then
-    _u43 = POLLOUT
+    _u44 = POLLOUT
   else
-    _u43 = POLLIN
+    _u44 = POLLIN
   end
-  local v = _u43
+  local v = _u44
   x.events = v
   return(coroutine.yield())
 end
@@ -247,28 +248,35 @@ local function listen(port, f)
   end
   return(enter(fd, coroutine.create(connect)))
 end
-local BUFFER_SIZE = 8192
-local function receive(fd)
+local function read(fd, b)
   wait(fd)
-  local b = ffi["new"]("char[?]", BUFFER_SIZE)
-  local x = c.read(fd, b, BUFFER_SIZE)
-  if x < 0 then
-    return(abort())
-  else
-    if x > 0 then
-      return(cstr(b, x))
+  local n = buffer.space(b)
+  if n > 0 then
+    local p = buffer.pointer(b)
+    local x = c.read(fd, p, n)
+    if x < 0 then
+      abort("read")
     end
+    b.length = b.length + x
+    return(x)
+  end
+end
+local function receive(fd)
+  local b = buffer.create()
+  local n = read(fd, b)
+  if n > 0 then
+    return(buffer.string(b))
   end
 end
 local function send(fd, b)
   local i = 0
   local n = _35(b)
-  local _u42 = ffi.cast("const char*", b)
+  local _u43 = ffi.cast("const char*", b)
   while i < n do
     wait(fd, "out")
-    local x = c.write(fd, _u42 + i, n - i)
+    local x = c.write(fd, _u43 + i, n - i)
     if x < 0 then
-      abort()
+      abort("send")
     end
     i = i + x
   end
