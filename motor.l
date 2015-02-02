@@ -233,9 +233,9 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (when (> n 0)
       (buffer.string b))))
 
-(define send (fd b)
-  (let (i 0 n (# b)
-        b (ffi.cast "const char*" b))
+(define send (fd s)
+  (let (i 0 n (# s)
+        b (ffi.cast "const char*" s))
     (while (< i n)
       (wait fd 'out)
       (let (x (c.write fd (+ b i) (- n i)))
