@@ -3,16 +3,34 @@ local buffer = require("buffer")
 local function create(fd)
   return({fd = fd, pos = 0, buffer = buffer.create()})
 end
+local function space(s)
+  return(buffer.space(s.buffer))
+end
+local function length(s)
+  return(buffer.length(s.buffer))
+end
+local function full63(s)
+  return(buffer["full?"](s.buffer))
+end
+local function extend(s, n)
+  return(buffer.extend(s.buffer, n))
+end
+local function read(s)
+  return(motor.read(s.fd, s.buffer))
+end
+local function string(s, n)
+  return(buffer.string(s.buffer, s.pos, n))
+end
 local function fill(s)
-  if buffer["full?"](s.buffer) then
-    buffer.extend(s.buffer)
+  if full63(s) then
+    extend(s)
   end
-  return(motor.read(s.fd, s.buffer) > 0)
+  return(read(s) > 0)
 end
 local function before(s, pat)
   local n = nil
   while nil63(n) do
-    local x = buffer.string(s.buffer, s.pos)
+    local x = string(s)
     local m = search(x, pat)
     if nil63(m) then
       if not fill(s) then
@@ -23,28 +41,27 @@ local function before(s, pat)
     end
   end
   if n >= 0 then
-    local i = s.pos
+    local _u10 = string(s, n)
     s.pos = s.pos + n
-    return(buffer.string(s.buffer, i, n))
+    return(_u10)
   end
 end
 local function line(s, pat)
   local p = pat or "\n"
-  local b = before(s, p)
+  local x = before(s, p)
   s.pos = s.pos + _35(p)
-  return(b)
+  return(x)
 end
 local function amount(s, n)
-  local b = s.buffer
-  if buffer.space(b) < n then
-    buffer.extend(b, n)
+  if space(s) < n then
+    extend(s, n)
   end
-  while buffer.length(b) - s.pos < n do
+  while length(s) - s.pos < n do
     if not fill(s) then
       break
     end
   end
-  local x = buffer.string(b, s.pos, s.pos + n)
+  local x = string(s, n)
   s.pos = s.pos + _35(x)
   return(x)
 end

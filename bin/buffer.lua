@@ -11,7 +11,13 @@ local function length(b)
   return(b.length)
 end
 local function extend(b, n)
-  local _u6 = n or b.capacity * 2
+  local _u13
+  if n then
+    _u13 = b.capacity + n
+  else
+    _u13 = b.capacity * 2
+  end
+  local _u6 = _u13
   local x = allocate(_u6)
   ffi.copy(x, b.storage, b.length)
   b.storage = x
@@ -26,12 +32,12 @@ end
 local function space(b)
   return(b.capacity - b.length)
 end
-local function string(b, off, len)
-  local _u11 = off or 0
+local function string(b, i, n)
+  local _u11 = i or 0
   local max = b.length - _u11
-  local n = min(len or max, max)
+  local _u12 = min(n or max, max)
   if _u11 < b.length then
-    return(ffi.string(b.storage + _u11, n))
+    return(ffi.string(b.storage + _u11, _u12))
   else
     return("")
   end
