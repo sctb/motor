@@ -52,7 +52,7 @@ local function line(s, pat)
   s.pos = s.pos + _35(p)
   return(x)
 end
-local function amount(s, n)
+local function take(s, n)
   if space(s) < n then
     extend(s, n)
   end
@@ -68,4 +68,4 @@ end
 local function emit(s, b)
   return(motor.send(s.fd, b))
 end
-return({line = line, amount = amount, create = create, emit = emit})
+return({line = line, emit = emit, create = create, take = take})

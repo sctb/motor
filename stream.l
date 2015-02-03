@@ -42,7 +42,7 @@
     (inc s.pos (# p))
     x))
 
-(define amount (s n)
+(define take (s n)
   (when (< (space s) n)
     (extend s n))
   (while (< (- (length s) s.pos) n)
@@ -57,5 +57,5 @@
 
 (export create
         line
-        amount
+        take
         emit)

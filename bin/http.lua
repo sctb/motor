@@ -35,7 +35,7 @@ local function headers(s)
   return(x)
 end
 local function body(s, n)
-  return(stream.amount(s, n))
+  return(stream.take(s, n))
 end
 local function response(data, code)
   return("HTTP/1.1 " .. code .. sep .. "Content-Length: " .. _35(data) .. sep2 .. data)

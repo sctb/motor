@@ -30,7 +30,7 @@
     x))
 
 (define body (s n)
-  (stream.amount s n))
+  (stream.take s n))
 
 (define response (data code)
   (cat "HTTP/1.1 " code sep
