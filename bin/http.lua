@@ -13,23 +13,23 @@ local function cleave(x, sep)
     return({clip(x, 0, n), clip(x, n + _35(sep))})
   end
 end
-local function start(s)
-  local _u6 = words(stream.line(s, sep))
-  local m = _u6[1]
-  local p = _u6[2]
-  local v = _u6[3]
+local function begin(s)
+  local _id = words(stream.line(s, sep))
+  local m = _id[1]
+  local p = _id[2]
+  local v = _id[3]
   return({path = p, method = m, version = v})
 end
 local function headers(s)
   local x = {}
   local b = stream.line(s, sep2)
-  local _u8 = split(b, sep)
-  local _u1 = nil
-  for _u1 in next, _u8 do
-    local l = _u8[_u1]
-    local _u10 = cleave(l, ": ")
-    local k = _u10[1]
-    local v = _u10[2]
+  local _o = split(b, sep)
+  local _i = nil
+  for _i in next, _o do
+    local l = _o[_i]
+    local _id1 = cleave(l, ": ")
+    local k = _id1[1]
+    local v = _id1[2]
     x[k] = v
   end
   return(x)
@@ -56,4 +56,4 @@ local function serve(port, f)
   motor.listen(port, connect)
   return(motor.start())
 end
-return({headers = headers, unknown = unknown, problem = problem, serve = serve, body = body, start = start, respond = respond})
+return({headers = headers, begin = begin, problem = problem, serve = serve, body = body, unknown = unknown, respond = respond})

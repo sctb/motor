@@ -10,12 +10,12 @@
   (split x " "))
 
 (define cleave (x sep)
-  (let (n (search x sep))
+  (let n (search x sep)
     (if (nil? n) x
       (list (clip x 0 n)
             (clip x (+ n (# sep)))))))
 
-(define start (s)
+(define begin (s)
   (let ((m p v) (words (stream.line s sep)))
     (obj method: m
          path: p
@@ -24,7 +24,7 @@
 (define headers (s)
   (let (x (obj)
         b (stream.line s sep2))
-    (each (_ l) (split b sep)
+    (each l (split b sep)
       (let ((k v) (cleave l ": "))
         (set (get x k) v)))
     x))
@@ -52,7 +52,7 @@
   (motor.listen port connect)
   (motor.start))
 
-(export start
+(export begin
         headers
         body
         respond

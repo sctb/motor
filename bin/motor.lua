@@ -87,8 +87,8 @@ local function bind(port)
   a.sin_family = AF_INET
   a.sin_port = c.htons(port)
   a.sin_addr.s_addr = c.htonl(INADDR_ANY)
-  local _u7 = ffi.cast("struct sockaddr*", p)
-  local x = c.bind(fd, _u7, n)
+  local _p = ffi.cast("struct sockaddr*", p)
+  local x = c.bind(fd, _p, n)
   if x < 0 then
     abort("bind")
   end
@@ -129,10 +129,10 @@ local function leave(fd)
   threads[fd] = nil
 end
 local function cleanup()
-  local _u15 = threads
+  local _o = threads
   local fd = nil
-  for fd in next, _u15 do
-    local _u1 = _u15[fd]
+  for fd in next, _o do
+    local x = _o[fd]
     leave(fd)
   end
 end
@@ -150,10 +150,10 @@ local function run(t, fd)
 end
 local function polls()
   local ps = {}
-  local _u20 = threads
-  local _u2 = nil
-  for _u2 in next, _u20 do
-    local x = _u20[_u2]
+  local _o1 = threads
+  local _i1 = nil
+  for _i1 in next, _o1 do
+    local x = _o1[_i1]
     local p = ffi["new"]("struct pollfd")
     p.fd = x.fd
     p.events = x.events
@@ -164,12 +164,12 @@ end
 local function tick(a, n)
   local i = 0
   while i < n do
-    local _u23 = a[i]
-    local fd = _u23.fd
-    local r = _u23.revents
-    local _u24 = threads[fd]
-    local v = _u24.events
-    local t = _u24.thread
+    local _id = a[i]
+    local fd = _id.fd
+    local r = _id.revents
+    local _id1 = threads[fd]
+    local v = _id1.events
+    local t = _id1.thread
     if dead63(t) or error63(r) then
       leave(fd)
     else
@@ -202,12 +202,12 @@ local function loop()
   end
 end
 local function start()
-  local _u30,_u31 = xpcall(function ()
+  local _e,_x = xpcall(function ()
     return(loop())
   end, _37message_handler)
-  local _u29 = {_u30, _u31}
-  local _u3 = _u29[1]
-  local e = _u29[2]
+  local _id2 = {_e, _x}
+  local x = _id2[1]
+  local e = _id2[2]
   if e then
     print("error: " .. e)
   end
@@ -216,22 +216,22 @@ end
 local F_SETFL = 4
 local O_NONBLOCK = 4
 local function accept(fd)
-  local _u35 = c.accept(fd, nil, nil)
-  if _u35 < 0 then
+  local _fd = c.accept(fd, nil, nil)
+  if _fd < 0 then
     abort("accept")
   end
-  c.fcntl(_u35, F_SETFL, O_NONBLOCK)
-  return(_u35)
+  c.fcntl(_fd, F_SETFL, O_NONBLOCK)
+  return(_fd)
 end
 local function wait(fd, o)
   local x = threads[fd]
-  local _u44
+  local _e1
   if o == "out" then
-    _u44 = POLLOUT
+    _e1 = POLLOUT
   else
-    _u44 = POLLIN
+    _e1 = POLLIN
   end
-  local v = _u44
+  local v = _e1
   x.events = v
   return(coroutine.yield())
 end

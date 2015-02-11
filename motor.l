@@ -65,7 +65,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define c ffi.C)
 
 (define abort (name)
-  (let (e (cstr (c.strerror (ffi.errno))))
+  (let e (cstr (c.strerror (ffi.errno)))
     (error (cat (or name 'error) ": " e))))
 
 (define AF_INET 2)
@@ -74,7 +74,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define INADDR_ANY 0)
 
 (define socket ()
-  (let (fd (c.socket AF_INET SOCK_STREAM IPPROTO_TCP))
+  (let fd (c.socket AF_INET SOCK_STREAM IPPROTO_TCP)
     (when (< fd 0)
       (abort 'socket))
     (let (a (ffi.new "int[1]" 1)
@@ -129,27 +129,27 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (set (get threads fd) x)))
 
 (define leave (fd)
-  (let (x (get threads fd))
+  (let x (get threads fd)
     (x.final))
   (set (get threads fd) nil))
 
 (define cleanup ()
-  (each (fd _) threads
+  (each (fd x) threads
     (leave fd)))
 
 (define dead? (c)
   (= (coroutine.status c) 'dead))
 
 (define run (t fd)
-  (let (|b,e| (resume t))
+  (let |b,e| (resume t)
     (unless b
       (print (cat "error:" e)))
     (when (dead? t)
       (leave fd))))
 
 (define polls ()
-  (let (ps ())
-    (each (_ x) threads
+  (let ps ()
+    (each x threads
       (let (p (ffi.new "struct pollfd"))
         (set p.fd x.fd)
         (set p.events x.events)
@@ -157,7 +157,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     ps))
 
 (define tick (a n)
-  (for (i n)
+  (for i n
     (let ((:fd revents: r) (get a i)
           (thread: t events: v) (get threads fd))
       (if (or (dead? t) (error? r))
@@ -185,7 +185,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
       (tick a n))))
 
 (define start ()
-  (let ((_ e) (guard (loop)))
+  (let ((x e) (guard (loop)))
     (when e
       (print (cat "error: " e))))
   (cleanup))
@@ -194,7 +194,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define O_NONBLOCK 0x0004)
 
 (define accept (fd)
-  (let (fd (c.accept fd nil nil))
+  (let fd (c.accept fd nil nil)
     (when (< fd 0)
       (abort 'accept))
     (c.fcntl fd F_SETFL O_NONBLOCK)
@@ -207,7 +207,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (yield))
 
 (define listen (port f)
-  (let (fd (bind port))
+  (let fd (bind port)
     (define connect ()
       (wait fd)
       (let (fd (accept fd)
@@ -218,7 +218,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define read (fd b)
   (wait fd)
-  (let (n (buffer.space b))
+  (let n (buffer.space b)
     (when (> n 0)
       (let (p (buffer.pointer b)
             x (c.read fd p n))
@@ -235,7 +235,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define write (fd p n)
   (wait fd 'out)
-  (let (x (c.write fd p n))
+  (let x (c.write fd p n)
     (when (< x 0)
       (abort 'send))
     x))
@@ -244,7 +244,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (let (i 0 n (# s)
         b (ffi.cast "const char*" s))
     (while (< i n)
-      (let (x (write fd (+ b i) (- n i)))
+      (let x (write fd (+ b i) (- n i))
         (inc i x)))))
 
 (export active

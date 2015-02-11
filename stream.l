@@ -23,7 +23,7 @@
   (> (read s) 0))
 
 (define before (s pat)
-  (let (n nil)
+  (let n nil
     (while (nil? n)
       (let (x (string s)
             m (search x pat))
@@ -32,7 +32,7 @@
               (set n -1))
           (set n m))))
     (when (>= n 0)
-      (let (x (string s n))
+      (let x (string s n)
         (inc s.pos n)
         x))))
 
@@ -48,7 +48,7 @@
   (while (< (- (length s) s.pos) n)
     (unless (fill s)
       (break)))
-  (let (x (string s n))
+  (let x (string s n)
     (inc s.pos (# x))
     x))
 

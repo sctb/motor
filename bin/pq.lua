@@ -89,10 +89,10 @@ local function connect(s, t)
       end)
     end
     local fd = pq.PQsocket(p)
-    local _u6 = function ()
+    local _f = function ()
       return(finish(p))
     end
-    motor.enter(fd, t, _u6)
+    motor.enter(fd, t, _f)
     return(p)
   end
 end
@@ -124,11 +124,11 @@ local function result(r)
   local x = pq.PQresultStatus(r)
   if x == pq.PGRES_COMMAND_OK then
     local a = cstr(pq.PQcmdTuples(r))
-    local _u16
+    local _e
     if some63(a) then
-      _u16 = number(a)
+      _e = number(a)
     end
-    return({size = _u16, command = cstr(pq.PQcmdStatus(r))})
+    return({size = _e, command = cstr(pq.PQcmdStatus(r))})
   else
     if x == pq.PGRES_TUPLES_OK or x == pq.PGRES_SINGLE_TUPLE then
       local n = pq.PQntuples(r)
@@ -150,11 +150,11 @@ local function send_query(p, fd, q)
   local sent = false
   while not sent do
     motor.wait(fd, "out")
-    local _u13 = pq.PQflush(p)
-    if _u13 < 0 then
+    local _x = pq.PQflush(p)
+    if _x < 0 then
       abort(p, "query")
     else
-      if _u13 == 0 then
+      if _x == 0 then
         sent = true
       end
     end

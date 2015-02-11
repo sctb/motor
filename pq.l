@@ -71,7 +71,7 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 (define cstr ffi.string)
 
 (define abort (p name)
-  (let (e (cstr (pq.PQerrorMessage p)))
+  (let e (cstr (pq.PQerrorMessage p))
     (error (cat (or name 'error) ": " e))))
 
 (define connected? (p)
@@ -81,13 +81,13 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
   (pq.PQfinish p))
 
 (define connect (s t)
-  (let (p (pq.PQconnectdb s))
+  (let p (pq.PQconnectdb s)
     (when (connected? p)
-      (let (x (pq.PQsetnonblocking p 1))
+      (let x (pq.PQsetnonblocking p 1)
         (unless (= x 0)
           (abort p 'connect)))
       (when (function? t)
-        (let (f t)
+        (let f t
           (set t (thread (fn () (f p))))))
       (let (fd (pq.PQsocket p)
             f (fn () (finish p)))
@@ -96,15 +96,15 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 
 (define consume (p fd)
   (motor.wait fd)
-  (let (x (pq.PQconsumeInput p))
+  (let x (pq.PQconsumeInput p)
     (when (= x 0)
       (abort p 'consume))))
 
 (define get-rows (res n m)
-  (let (rs ())
-    (for (i n)
-      (let (r (obj))
-        (for (j m)
+  (let rs ()
+    (for i n
+      (let r (obj)
+        (for j m
           (let (k (cstr (pq.PQfname res j))
                 v (cstr (pq.PQgetvalue res i j)))
             (set (get r k) v)))
@@ -112,9 +112,9 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
     rs))
 
 (define result (r)
-  (let (x (pq.PQresultStatus r))
+  (let x (pq.PQresultStatus r)
     (if (= x pq.PGRES_COMMAND_OK)
-        (let (a (cstr (pq.PQcmdTuples r)))
+        (let a (cstr (pq.PQcmdTuples r))
           (obj command: (cstr (pq.PQcmdStatus r))
                size: (when (some? a) (number a))))
         (or (= x pq.PGRES_TUPLES_OK)
@@ -130,10 +130,10 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
   (pq.PQclear r))
 
 (define send-query (p fd q)
-  (let (x (pq.PQsendQuery p q))
+  (let x (pq.PQsendQuery p q)
     (when (= x 0)
       (abort p 'query)))
-  (let (sent false)
+  (let sent false
     (while (not sent)
       (motor.wait fd 'out)
       (let (x (pq.PQflush p))
@@ -141,10 +141,10 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
             (= x 0) (set sent true))))))
 
 (define get-results (p fd)
-  (let (rs ())
+  (let rs ()
     (while true
       (if (= (pq.PQisBusy p) 0)
-          (let (r (pq.PQgetResult p))
+          (let r (pq.PQgetResult p)
             (if (is? r)
                 (add rs r)
               (break)))
@@ -152,7 +152,7 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
     rs))
 
 (define query (p q)
-  (let (fd (pq.PQsocket p))
+  (let fd (pq.PQsocket p)
     (send-query p fd q)
     (let (rs (get-results p fd)
           xs (map result rs))

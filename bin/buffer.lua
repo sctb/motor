@@ -4,24 +4,24 @@ local function allocate(n)
   return(ffi["new"]("char[?]", n))
 end
 local function create(n)
-  local _u3 = n or default_size
-  return({capacity = _u3, length = 0, storage = allocate(_u3)})
+  local _n = n or default_size
+  return({capacity = _n, length = 0, storage = allocate(_n)})
 end
 local function length(b)
   return(b.length)
 end
 local function extend(b, n)
-  local _u13
+  local _e
   if n then
-    _u13 = b.capacity + n
+    _e = b.capacity + n
   else
-    _u13 = b.capacity * 2
+    _e = b.capacity * 2
   end
-  local _u6 = _u13
-  local x = allocate(_u6)
+  local _n1 = _e
+  local x = allocate(_n1)
   ffi.copy(x, b.storage, b.length)
   b.storage = x
-  b.capacity = _u6
+  b.capacity = _n1
 end
 local function full63(b)
   return(b.length == b.capacity)
@@ -33,11 +33,11 @@ local function space(b)
   return(b.capacity - b.length)
 end
 local function string(b, i, n)
-  local _u11 = i or 0
-  local max = b.length - _u11
-  local _u12 = min(n or max, max)
-  if _u11 < b.length then
-    return(ffi.string(b.storage + _u11, _u12))
+  local _i = i or 0
+  local max = b.length - _i
+  local _n2 = min(n or max, max)
+  if _i < b.length then
+    return(ffi.string(b.storage + _i, _n2))
   else
     return("")
   end

@@ -8,7 +8,7 @@
   (ffi.new "char[?]" n))
 
 (define create (n)
-  (let (n (or n default-size))
+  (let n (or n default-size)
     (obj length: 0
          storage: (allocate n)
          capacity: n)))

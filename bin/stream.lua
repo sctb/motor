@@ -41,9 +41,9 @@ local function before(s, pat)
     end
   end
   if n >= 0 then
-    local _u10 = string(s, n)
+    local _x = string(s, n)
     s.pos = s.pos + n
-    return(_u10)
+    return(_x)
   end
 end
 local function line(s, pat)
