@@ -101,15 +101,14 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
       (abort p 'consume))))
 
 (define get-rows (res n m)
-  (let rs ()
+  (with rs ()
     (for i n
       (let r (obj)
         (for j m
           (let (k (cstr (pq.PQfname res j))
                 v (cstr (pq.PQgetvalue res i j)))
             (set (get r k) v)))
-        (add rs r)))
-    rs))
+        (add rs r)))))
 
 (define result (r)
   (let x (pq.PQresultStatus r)
@@ -141,22 +140,20 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
             (= x 0) (set sent true))))))
 
 (define get-results (p fd)
-  (let rs ()
+  (with rs ()
     (while true
       (if (= (pq.PQisBusy p) 0)
           (let r (pq.PQgetResult p)
             (if (is? r)
                 (add rs r)
               (break)))
-        (consume p fd)))
-    rs))
+        (consume p fd)))))
 
 (define query (p q)
   (let fd (pq.PQsocket p)
     (send-query p fd q)
-    (let (rs (get-results p fd)
-          xs (map result rs))
-      (map clear rs)
-      xs)))
+    (let rs (get-results p fd)
+      (with xs (map result rs)
+        (map clear rs)))))
 
 (export connect query)

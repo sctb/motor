@@ -22,12 +22,11 @@
          version: v)))
 
 (define headers (s)
-  (let (x (obj)
-        b (stream.line s sep2))
-    (each l (split b sep)
-      (let ((k v) (cleave l ": "))
-        (set (get x k) v)))
-    x))
+  (with x (obj)
+    (let b (stream.line s sep2)
+      (each l (split b sep)
+        (let ((k v) (cleave l ": "))
+          (set (get x k) v))))))
 
 (define body (s n)
   (stream.take s n))
