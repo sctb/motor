@@ -4,9 +4,9 @@
 (define buffer (require 'buffer))
 
 (define create (fd)
-  (obj fd: fd
-       buffer: (buffer.create)
-       pos: 0))
+  (list fd: fd
+        buffer: (buffer.create)
+        pos: 0))
 
 (define space (s) (buffer.space s.buffer))
 (define length (s) (buffer.length s.buffer))

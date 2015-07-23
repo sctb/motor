@@ -106,7 +106,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define POLLHUP 0x0010)
 (define POLLNVAL 0x0020)
 
-(define threads (obj))
+(define threads ())
 
 (define error? (v)
   (> v 0x0007))
@@ -120,10 +120,10 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define enter (fd thread final)
   (let (f (or final (fn () (close fd)))
-        x (obj fd: fd
-               thread: thread
-               final: f
-               events: POLLNONE))
+        x (list fd: fd
+                thread: thread
+                final: f
+                events: POLLNONE))
     (set (get threads fd) x)))
 
 (define leave (fd)

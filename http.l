@@ -17,12 +17,12 @@
 
 (define begin (s)
   (let ((m p v) (words (stream.line s sep)))
-    (obj method: m
-         path: p
-         version: v)))
+    (list method: m
+          path: p
+          version: v)))
 
 (define headers (s)
-  (with x (obj)
+  (with x ()
     (let b (stream.line s sep2)
       (each l (split b sep)
         (let ((k v) (cleave l ": "))

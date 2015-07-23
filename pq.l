@@ -103,7 +103,7 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 (define get-rows (res n m)
   (with rs ()
     (for i n
-      (let r (obj)
+      (let r ()
         (for j m
           (let (k (cstr (pq.PQfname res j))
                 v (cstr (pq.PQgetvalue res i j)))
@@ -114,16 +114,16 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
   (let x (pq.PQresultStatus r)
     (if (= x pq.PGRES_COMMAND_OK)
         (let a (cstr (pq.PQcmdTuples r))
-          (obj command: (cstr (pq.PQcmdStatus r))
-               size: (when (some? a) (number a))))
+          (list command: (cstr (pq.PQcmdStatus r))
+                size: (when (some? a) (number a))))
         (or (= x pq.PGRES_TUPLES_OK)
             (= x pq.PGRES_SINGLE_TUPLE))
         (let (n (pq.PQntuples r)
               m (pq.PQnfields r))
-          (obj command: (cstr (pq.PQcmdStatus r))
-               size: n
-               rows: (get-rows r n m)))
-      (obj error: (cstr (pq.PQresultErrorMessage r))))))
+          (list command: (cstr (pq.PQcmdStatus r))
+                size: n
+                rows: (get-rows r n m)))
+      (list error: (cstr (pq.PQresultErrorMessage r))))))
 
 (define clear (r)
   (pq.PQclear r))

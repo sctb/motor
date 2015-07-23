@@ -14,15 +14,19 @@ local function cleave(x, sep)
   end
 end
 local function begin(s)
-  local _id = words(stream.line(s, sep))
+  local _id = words(stream46line(s, sep))
   local m = _id[1]
   local p = _id[2]
   local v = _id[3]
-  return({path = p, method = m, version = v})
+  local _x1 = {}
+  _x1.path = p
+  _x1.method = m
+  _x1.version = v
+  return(_x1)
 end
 local function headers(s)
   local x = {}
-  local b = stream.line(s, sep2)
+  local b = stream46line(s, sep2)
   local _o = split(b, sep)
   local _i = nil
   for _i in next, _o do
@@ -35,25 +39,25 @@ local function headers(s)
   return(x)
 end
 local function body(s, n)
-  return(stream.take(s, n))
+  return(stream46take(s, n))
 end
 local function response(data, code)
   return("HTTP/1.1 " .. code .. sep .. "Content-Length: " .. _35(data) .. sep2 .. data)
 end
 local function respond(s, data)
-  return(stream.emit(s, response(data, "200 OK")))
+  return(stream46emit(s, response(data, "200 OK")))
 end
 local function problem(s, data)
-  return(stream.emit(s, response(data, "500 Internal Server Error")))
+  return(stream46emit(s, response(data, "500 Internal Server Error")))
 end
 local function unknown(s)
-  return(stream.emit(s, response("Unknown", "404 Not Found")))
+  return(stream46emit(s, response("Unknown", "404 Not Found")))
 end
 local function serve(port, f)
   local function connect(fd)
-    return(f(stream.create(fd)))
+    return(f(stream46create(fd)))
   end
-  motor.listen(port, connect)
-  return(motor.start())
+  motor46listen(port, connect)
+  return(motor46start())
 end
 return({headers = headers, begin = begin, problem = problem, serve = serve, body = body, unknown = unknown, respond = respond})
