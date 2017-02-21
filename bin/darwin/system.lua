@@ -8,5 +8,5 @@ struct sockaddr_in {
   char                  sin_zero[8];
 };
 ]]
-SOL_SOCKET = _0xffff
+SOL_SOCKET = 0xffff
 SO_REUSEADDR = 4
