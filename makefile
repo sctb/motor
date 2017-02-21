@@ -2,8 +2,8 @@
 
 LUMEN := LUMEN_HOST=luajit lumen
 MODS :=	bin/motor.lua		\
-	bin/linux/system.lua	\
-	bin/darwin/system.lua	\
+	bin/linux/motor-definitions.lua	\
+	bin/darwin/motor-definitions.lua	\
 	bin/buffer.lua		\
 	bin/stream.lua		\
 	bin/http.lua		\
