@@ -55,7 +55,7 @@ typedef int ssize_t;
 ssize_t read(int fildes, void *buf, size_t nbyte);
 ssize_t write(int fildes, const void *buf, size_t nbyte);
 ]]
-require("system")
+require("socket")
 local cstr = ffi.string
 local c = ffi.C
 local function abort(name)
