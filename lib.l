@@ -4,10 +4,10 @@
   (cat "|" v ".cdef[[" (inner x) "]]|"))
 
 (define-macro resume args
-  `(coroutine.resume ,@args))
+  `((get coroutine 'resume) ,@args))
 
 (define-macro yield args
-  `(coroutine.yield ,@args))
+  `((get coroutine 'yield) ,@args))
 
 (define-macro thread args
-  `(coroutine.create ,@args))
+  `((get coroutine 'create) ,@args))

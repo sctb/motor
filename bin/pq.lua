@@ -66,8 +66,8 @@ char *PQgetvalue(const PGresult *res, int row_number, int column_number);
 local pq = ffi.load("pq")
 local cstr = ffi.string
 local function abort(p, name)
-  local e = cstr(pq.PQerrorMessage(p))
-  error((name or "error") .. ": " .. e)
+  local _e = cstr(pq.PQerrorMessage(p))
+  error((name or "error") .. ": " .. _e)
 end
 local function connected63(p)
   return(pq.PQstatus(p) == pq.CONNECTION_OK)
@@ -76,75 +76,75 @@ local function finish(p)
   return(pq.PQfinish(p))
 end
 local function connect(s, t)
-  local p = pq.PQconnectdb(s)
-  if connected63(p) then
-    local x = pq.PQsetnonblocking(p, 1)
-    if not( x == 0) then
-      abort(p, "connect")
+  local _p = pq.PQconnectdb(s)
+  if connected63(_p) then
+    local _x = pq.PQsetnonblocking(_p, 1)
+    if not( _x == 0) then
+      abort(_p, "connect")
     end
     if function63(t) then
-      local f = t
+      local _f = t
       t = coroutine.create(function ()
-        return(f(p))
+        return(_f(_p))
       end)
     end
-    local fd = pq.PQsocket(p)
-    local _f = function ()
-      return(finish(p))
+    local _fd = pq.PQsocket(_p)
+    local _f1 = function ()
+      return(finish(_p))
     end
-    motor.enter(fd, t, _f)
-    return(p)
+    motor.enter(_fd, t, _f1)
+    return(_p)
   end
 end
 local function consume(p, fd)
   motor.wait(fd)
-  local x = pq.PQconsumeInput(p)
-  if x == 0 then
+  local _x1 = pq.PQconsumeInput(p)
+  if _x1 == 0 then
     return(abort(p, "consume"))
   end
 end
 local function get_rows(res, n, m)
-  local rs = {}
-  local i = 0
-  while i < n do
-    local r = {}
-    local j = 0
-    while j < m do
-      local k = cstr(pq.PQfname(res, j))
-      local v = cstr(pq.PQgetvalue(res, i, j))
-      r[k] = v
-      j = j + 1
+  local _rs = {}
+  local _i = 0
+  while _i < n do
+    local _r8 = {}
+    local _j = 0
+    while _j < m do
+      local _k = cstr(pq.PQfname(res, _j))
+      local _v = cstr(pq.PQgetvalue(res, _i, _j))
+      _r8[_k] = _v
+      _j = _j + 1
     end
-    add(rs, r)
-    i = i + 1
+    add(_rs, _r8)
+    _i = _i + 1
   end
-  return(rs)
+  return(_rs)
 end
 local function result(r)
-  local x = pq.PQresultStatus(r)
-  if x == pq.PGRES_COMMAND_OK then
-    local a = cstr(pq.PQcmdTuples(r))
-    local _x = {}
-    local _e
-    if some63(a) then
-      _e = number(a)
+  local _x2 = pq.PQresultStatus(r)
+  if _x2 == pq.PGRES_COMMAND_OK then
+    local _a = cstr(pq.PQcmdTuples(r))
+    local __x3 = {}
+    __x3.command = cstr(pq.PQcmdStatus(r))
+    local _e1
+    if some63(_a) then
+      _e1 = number(_a)
     end
-    _x.size = _e
-    _x.command = cstr(pq.PQcmdStatus(r))
-    return(_x)
+    __x3.size = _e1
+    return(__x3)
   else
-    if x == pq.PGRES_TUPLES_OK or x == pq.PGRES_SINGLE_TUPLE then
-      local n = pq.PQntuples(r)
-      local m = pq.PQnfields(r)
-      local _x1 = {}
-      _x1.command = cstr(pq.PQcmdStatus(r))
-      _x1.rows = get_rows(r, n, m)
-      _x1.size = n
-      return(_x1)
+    if _x2 == pq.PGRES_TUPLES_OK or _x2 == pq.PGRES_SINGLE_TUPLE then
+      local _n = pq.PQntuples(r)
+      local _m = pq.PQnfields(r)
+      local __x4 = {}
+      __x4.command = cstr(pq.PQcmdStatus(r))
+      __x4.size = _n
+      __x4.rows = get_rows(r, _n, _m)
+      return(__x4)
     else
-      local _x2 = {}
-      _x2.error = cstr(pq.PQresultErrorMessage(r))
-      return(_x2)
+      local __x5 = {}
+      __x5.error = cstr(pq.PQresultErrorMessage(r))
+      return(__x5)
     end
   end
 end
@@ -152,30 +152,30 @@ local function clear(r)
   return(pq.PQclear(r))
 end
 local function send_query(p, fd, q)
-  local x = pq.PQsendQuery(p, q)
-  if x == 0 then
+  local _x6 = pq.PQsendQuery(p, q)
+  if _x6 == 0 then
     abort(p, "query")
   end
-  local sent = false
-  while not sent do
+  local _sent = false
+  while not _sent do
     motor.wait(fd, "out")
-    local _x3 = pq.PQflush(p)
-    if _x3 < 0 then
+    local _x7 = pq.PQflush(p)
+    if _x7 < 0 then
       abort(p, "query")
     else
-      if _x3 == 0 then
-        sent = true
+      if _x7 == 0 then
+        _sent = true
       end
     end
   end
 end
 local function get_results(p, fd)
-  local rs = {}
+  local _rs1 = {}
   while true do
     if pq.PQisBusy(p) == 0 then
-      local r = pq.PQgetResult(p)
-      if is63(r) then
-        add(rs, r)
+      local _r13 = pq.PQgetResult(p)
+      if is63(_r13) then
+        add(_rs1, _r13)
       else
         break
       end
@@ -183,14 +183,14 @@ local function get_results(p, fd)
       consume(p, fd)
     end
   end
-  return(rs)
+  return(_rs1)
 end
 local function query(p, q)
-  local fd = pq.PQsocket(p)
-  send_query(p, fd, q)
-  local rs = get_results(p, fd)
-  local xs = map(result, rs)
-  map(clear, rs)
-  return(xs)
+  local _fd1 = pq.PQsocket(p)
+  send_query(p, _fd1, q)
+  local _rs2 = get_results(p, _fd1)
+  local _xs = map(result, _rs2)
+  map(clear, _rs2)
+  return(_xs)
 end
-return({query = query, connect = connect})
+return({connect = connect, query = query})

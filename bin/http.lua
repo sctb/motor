@@ -6,37 +6,37 @@ local function words(x)
   return(split(x, " "))
 end
 local function cleave(x, sep)
-  local n = search(x, sep)
-  if nil63(n) then
+  local _n = search(x, sep)
+  if nil63(_n) then
     return(x)
   else
-    return({clip(x, 0, n), clip(x, n + _35(sep))})
+    return({clip(x, 0, _n), clip(x, _n + _35(sep))})
   end
 end
 local function begin(s)
-  local _id = words(stream.line(s, sep))
-  local m = _id[1]
-  local p = _id[2]
-  local v = _id[3]
-  local _x1 = {}
-  _x1.path = p
-  _x1.method = m
-  _x1.version = v
-  return(_x1)
+  local __id = words(stream.line(s, sep))
+  local _m = __id[1]
+  local _p = __id[2]
+  local _v = __id[3]
+  local __x1 = {}
+  __x1.method = _m
+  __x1.path = _p
+  __x1.version = _v
+  return(__x1)
 end
 local function headers(s)
-  local x = {}
-  local b = stream.line(s, sep2)
-  local _o = split(b, sep)
-  local _i = nil
-  for _i in next, _o do
-    local l = _o[_i]
-    local _id1 = cleave(l, ": ")
-    local k = _id1[1]
-    local v = _id1[2]
-    x[k] = v
+  local _x2 = {}
+  local _b = stream.line(s, sep2)
+  local __o = split(_b, sep)
+  local __i = nil
+  for __i in next, __o do
+    local _l = __o[__i]
+    local __id1 = cleave(_l, ": ")
+    local _k = __id1[1]
+    local _v1 = __id1[2]
+    _x2[_k] = _v1
   end
-  return(x)
+  return(_x2)
 end
 local function body(s, n)
   return(stream.take(s, n))
@@ -60,4 +60,4 @@ local function serve(port, f)
   motor.listen(port, connect)
   return(motor.start())
 end
-return({serve = serve, begin = begin, problem = problem, headers = headers, body = body, unknown = unknown, respond = respond})
+return({begin = begin, headers = headers, body = body, respond = respond, problem = problem, unknown = unknown, serve = serve})
