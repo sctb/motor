@@ -5,11 +5,6 @@ local function allocate(n)
 end
 local function create(n)
   local _n = n or default_size
-  local _x = {}
-  _x.capacity = _n
-  _x.length = 0
-  _x.storage = allocate(_n)
-  return(_x)
 end
 local function length(b)
   return(b.length)
@@ -22,9 +17,9 @@ local function extend(b, n)
     _e = b.capacity * 2
   end
   local _n1 = _e
-  local x = allocate(_n1)
-  ffi.copy(x, b.storage, b.length)
-  b.storage = x
+  local _x = allocate(_n1)
+  ffi.copy(_x, b.storage, b.length)
+  b.storage = _x
   b.capacity = _n1
   return(b.capacity)
 end
@@ -39,12 +34,12 @@ local function space(b)
 end
 local function string(b, i, n)
   local _i = i or 0
-  local max = b.length - _i
-  local _n2 = min(n or max, max)
+  local _max = b.length - _i
+  local _n2 = min(n or _max, _max)
   if _i < b.length then
     return(ffi.string(b.storage + _i, _n2))
   else
     return("")
   end
 end
-return({string = string, space = space, pointer = pointer, length = length, ["full?"] = full63, create = create, extend = extend})
+return({create = create, length = length, extend = extend, ["full?"] = full63, pointer = pointer, space = space, string = string})

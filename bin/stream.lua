@@ -1,11 +1,11 @@
 local motor = require("motor")
 local buffer = require("buffer")
 local function create(fd)
-  local _x = {}
-  _x.fd = fd
-  _x.pos = 0
-  _x.buffer = buffer.create()
-  return(_x)
+  local __x = {}
+  __x.fd = fd
+  __x.buffer = buffer.create()
+  __x.pos = 0
+  return(__x)
 end
 local function space(s)
   return(buffer.space(s.buffer))
@@ -32,29 +32,29 @@ local function fill(s)
   return(read(s) > 0)
 end
 local function before(s, pat)
-  local n = nil
-  while nil63(n) do
-    local x = string(s)
-    local m = search(x, pat)
-    if nil63(m) then
+  local _n = nil
+  while nil63(_n) do
+    local _x1 = string(s)
+    local _m = search(_x1, pat)
+    if nil63(_m) then
       if not fill(s) then
-        n = -1
+        _n = -1
       end
     else
-      n = m
+      _n = _m
     end
   end
-  if n >= 0 then
-    local _x1 = string(s, n)
-    s.pos = s.pos + n
-    return(_x1)
+  if _n >= 0 then
+    local _x2 = string(s, _n)
+    s.pos = s.pos + _n
+    return(_x2)
   end
 end
 local function line(s, pat)
-  local p = pat or "\n"
-  local x = before(s, p)
-  s.pos = s.pos + _35(p)
-  return(x)
+  local _p = pat or "\n"
+  local _x3 = before(s, _p)
+  s.pos = s.pos + _35(_p)
+  return(_x3)
 end
 local function take(s, n)
   if space(s) < n then
@@ -65,11 +65,11 @@ local function take(s, n)
       break
     end
   end
-  local x = string(s, n)
-  s.pos = s.pos + _35(x)
-  return(x)
+  local _x4 = string(s, n)
+  s.pos = s.pos + _35(_x4)
+  return(_x4)
 end
 local function emit(s, b)
   return(motor.send(s.fd, b))
 end
-return({line = line, emit = emit, create = create, take = take})
+return({create = create, line = line, take = take, emit = emit})
