@@ -3,61 +3,61 @@ local stream = require("stream")
 local sep = "\r\n"
 local sep2 = sep .. sep
 local function words(x)
-  return(split(x, " "))
+  return split(x, " ")
 end
 local function cleave(x, sep)
-  local n = search(x, sep)
-  if nil63(n) then
-    return(x)
+  local __n = search(x, sep)
+  if nil63(__n) then
+    return x
   else
-    return({clip(x, 0, n), clip(x, n + _35(sep))})
+    return {clip(x, 0, __n), clip(x, __n + _35(sep))}
   end
 end
 local function begin(s)
-  local _id = words(stream.line(s, sep))
-  local m = _id[1]
-  local p = _id[2]
-  local v = _id[3]
-  local _x1 = {}
-  _x1.path = p
-  _x1.method = m
-  _x1.version = v
-  return(_x1)
+  local ____id = words(stream.line(s, sep))
+  local __m = ____id[1]
+  local __p = ____id[2]
+  local __v = ____id[3]
+  local ____x1 = {}
+  ____x1.path = __p
+  ____x1.method = __m
+  ____x1.version = __v
+  return ____x1
 end
 local function headers(s)
-  local x = {}
-  local b = stream.line(s, sep2)
-  local _o = split(b, sep)
-  local _i = nil
-  for _i in next, _o do
-    local l = _o[_i]
-    local _id1 = cleave(l, ": ")
-    local k = _id1[1]
-    local v = _id1[2]
-    x[k] = v
+  local __x2 = {}
+  local __b = stream.line(s, sep2)
+  local ____o = split(__b, sep)
+  local ____i = nil
+  for ____i in next, ____o do
+    local __l = ____o[____i]
+    local ____id1 = cleave(__l, ": ")
+    local __k = ____id1[1]
+    local __v1 = ____id1[2]
+    __x2[__k] = __v1
   end
-  return(x)
+  return __x2
 end
 local function body(s, n)
-  return(stream.take(s, n))
+  return stream.take(s, n)
 end
 local function response(data, code)
-  return("HTTP/1.1 " .. code .. sep .. "Content-Length: " .. _35(data) .. sep2 .. data)
+  return "HTTP/1.1 " .. code .. sep .. "Content-Length: " .. _35(data) .. sep2 .. data
 end
 local function respond(s, data)
-  return(stream.emit(s, response(data, "200 OK")))
+  return stream.emit(s, response(data, "200 OK"))
 end
 local function problem(s, data)
-  return(stream.emit(s, response(data, "500 Internal Server Error")))
+  return stream.emit(s, response(data, "500 Internal Server Error"))
 end
 local function unknown(s)
-  return(stream.emit(s, response("Unknown", "404 Not Found")))
+  return stream.emit(s, response("Unknown", "404 Not Found"))
 end
 local function serve(port, f)
   local function connect(fd)
-    return(f(stream.create(fd)))
+    return f(stream.create(fd))
   end
   motor.listen(port, connect)
-  return(motor.start())
+  return motor.start()
 end
-return({serve = serve, begin = begin, problem = problem, headers = headers, body = body, unknown = unknown, respond = respond})
+return {serve = serve, begin = begin, problem = problem, headers = headers, body = body, unknown = unknown, respond = respond}

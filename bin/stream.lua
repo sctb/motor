@@ -1,60 +1,60 @@
 local motor = require("motor")
 local buffer = require("buffer")
 local function create(fd)
-  local _x = {}
-  _x.fd = fd
-  _x.pos = 0
-  _x.buffer = buffer.create()
-  return(_x)
+  local ____x = {}
+  ____x.fd = fd
+  ____x.pos = 0
+  ____x.buffer = buffer.create()
+  return ____x
 end
 local function space(s)
-  return(buffer.space(s.buffer))
+  return buffer.space(s.buffer)
 end
 local function length(s)
-  return(buffer.length(s.buffer))
+  return buffer.length(s.buffer)
 end
 local function full63(s)
-  return(buffer["full?"](s.buffer))
+  return buffer.full63(s.buffer)
 end
 local function extend(s, n)
-  return(buffer.extend(s.buffer, n))
+  return buffer.extend(s.buffer, n)
 end
 local function read(s)
-  return(motor.read(s.fd, s.buffer))
+  return motor.read(s.fd, s.buffer)
 end
 local function string(s, n)
-  return(buffer.string(s.buffer, s.pos, n))
+  return buffer.string(s.buffer, s.pos, n)
 end
 local function fill(s)
   if full63(s) then
     extend(s)
   end
-  return(read(s) > 0)
+  return read(s) > 0
 end
 local function before(s, pat)
-  local n = nil
-  while nil63(n) do
-    local x = string(s)
-    local m = search(x, pat)
-    if nil63(m) then
+  local __n = nil
+  while nil63(__n) do
+    local __x1 = string(s)
+    local __m = search(__x1, pat)
+    if nil63(__m) then
       if not fill(s) then
-        n = -1
+        __n = -1
       end
     else
-      n = m
+      __n = __m
     end
   end
-  if n >= 0 then
-    local _x1 = string(s, n)
-    s.pos = s.pos + n
-    return(_x1)
+  if __n >= 0 then
+    local __x2 = string(s, __n)
+    s.pos = s.pos + __n
+    return __x2
   end
 end
 local function line(s, pat)
-  local p = pat or "\n"
-  local x = before(s, p)
-  s.pos = s.pos + _35(p)
-  return(x)
+  local __p = pat or "\n"
+  local __x3 = before(s, __p)
+  s.pos = s.pos + _35(__p)
+  return __x3
 end
 local function take(s, n)
   if space(s) < n then
@@ -65,11 +65,11 @@ local function take(s, n)
       break
     end
   end
-  local x = string(s, n)
-  s.pos = s.pos + _35(x)
-  return(x)
+  local __x4 = string(s, n)
+  s.pos = s.pos + _35(__x4)
+  return __x4
 end
 local function emit(s, b)
-  return(motor.send(s.fd, b))
+  return motor.send(s.fd, b)
 end
-return({line = line, emit = emit, create = create, take = take})
+return {line = line, emit = emit, create = create, take = take}

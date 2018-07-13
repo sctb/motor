@@ -61,11 +61,8 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (require 'socket)
 
-(define cstr ffi.string)
-(define c ffi.C)
-
 (define abort (name)
-  (let e (cstr (c.strerror (ffi.errno)))
+  (let e (ffi .string (ffi .C .strerror (ffi (.errno))))
     (error (cat (or name 'error) ": " e))))
 
 (define AF_INET 2)
@@ -74,28 +71,28 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define INADDR_ANY 0)
 
 (define socket ()
-  (with fd (c.socket AF_INET SOCK_STREAM IPPROTO_TCP)
+  (with fd (ffi .C .socket AF_INET SOCK_STREAM IPPROTO_TCP)
     (when (< fd 0)
       (abort 'socket))
-    (let (a (ffi.new "int[1]" 1)
-          n (ffi.sizeof "int")
-          x (c.setsockopt fd SOL_SOCKET SO_REUSEADDR a n))
+    (let (a (ffi .new "int[1]" 1)
+          n (ffi .sizeof "int")
+          x (ffi .C .setsockopt fd SOL_SOCKET SO_REUSEADDR a n))
       (when (< x 0)
         (abort 'setsockopt)))))
 
 (define bind (port)
   (with fd (socket)
-    (let (p (ffi.new "struct sockaddr_in[1]")
-          n (ffi.sizeof "struct sockaddr_in")
+    (let (p (ffi .new "struct sockaddr_in[1]")
+          n (ffi .sizeof "struct sockaddr_in")
           a (get p 0))
-      (set a.sin_family AF_INET)
-      (set a.sin_port (c.htons port))
-      (set a.sin_addr.s_addr (c.htonl INADDR_ANY))
-      (let (p (ffi.cast "struct sockaddr*" p)
-            x (c.bind fd p n))
+      (set (a .sin_family) AF_INET)
+      (set (a .sin_port) (ffi .C .htons port))
+      (set (a .sin_addr .s_addr) (ffi .C .htonl INADDR_ANY))
+      (let (p (ffi .cast "struct sockaddr*" p)
+            x (ffi .C .bind fd p n))
         (when (< x 0)
           (abort 'bind)))
-      (let x (c.listen fd 10)
+      (let x (ffi .C .listen fd 10)
         (when (< x 0)
           (abort 'listen))))))
 
@@ -112,7 +109,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (> v 0x0007))
 
 (define close (fd)
-  (when (< (c.close fd) 0)
+  (when (< (ffi .C .close fd) 0)
     (abort 'close)))
 
 (define active (fd)
@@ -128,7 +125,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define leave (fd)
   (let x (get threads fd)
-    (x.final))
+    (x (.final)))
   (set (get threads fd) nil))
 
 (define cleanup ()
@@ -136,7 +133,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
     (leave fd)))
 
 (define dead? (c)
-  (= (coroutine.status c) 'dead))
+  (= (coroutine .status c) 'dead))
 
 (define run (t fd)
   (let |b,e| (resume t)
@@ -148,9 +145,9 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define polls ()
   (with ps ()
     (each x threads
-      (let (p (ffi.new "struct pollfd"))
-        (set p.fd x.fd)
-        (set p.events x.events)
+      (let (p (ffi .new "struct pollfd"))
+        (set (p .fd) (x .fd))
+        (set (p .events) (x .events))
         (add ps p)))))
 
 (define tick (a n)
@@ -167,7 +164,7 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define timeout ()
   (if (find (fn (x)
-              (= x.events POLLNONE))
+              (= (x .events) POLLNONE))
             threads)
       IMMEDIATE
     NEVER))
@@ -176,9 +173,9 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
   (while (not (empty? threads))
     (let (p (polls)
           n (# p)
-          a (ffi.new "struct pollfd[?]" n p)
+          a (ffi .new "struct pollfd[?]" n p)
           t (timeout p))
-      (c.poll a n t)
+      (ffi .C .poll a n t)
       (tick a n))))
 
 (define start ()
@@ -191,15 +188,15 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 (define O_NONBLOCK 0x0004)
 
 (define accept (fd)
-  (with fd (c.accept fd nil nil)
+  (with fd (ffi .C .accept fd nil nil)
     (when (< fd 0)
       (abort 'accept))
-    (c.fcntl fd F_SETFL O_NONBLOCK)))
+    (ffi .C .fcntl fd F_SETFL O_NONBLOCK)))
 
 (define wait (fd o)
   (let (x (get threads fd)
         v (if (= o 'out) POLLOUT POLLIN))
-    (set x.events v))
+    (set (x .events) v))
   (yield))
 
 (define listen (port f)
@@ -214,29 +211,29 @@ ssize_t write(int fildes, const void *buf, size_t nbyte);
 
 (define read (fd b)
   (wait fd)
-  (let n (buffer.space b)
+  (let n (buffer .space b)
     (when (> n 0)
-      (let p (buffer.pointer b)
-        (with x (c.read fd p n)
+      (let p (buffer .pointer b)
+        (with x (ffi .C .read fd p n)
           (when (< x 0)
             (abort 'read))
-          (inc b.length x))))))
+          (inc (b .length) x))))))
 
 (define receive (fd)
-  (let (b (buffer.create)
+  (let (b (buffer (.create))
         n (read fd b))
     (when (> n 0)
-      (buffer.string b))))
+      (buffer .string b))))
 
 (define write (fd p n)
   (wait fd 'out)
-  (with x (c.write fd p n)
+  (with x (ffi .C .write fd p n)
     (when (< x 0)
       (abort 'send))))
 
 (define send (fd s)
   (let (i 0 n (# s)
-        b (ffi.cast "const char*" s))
+        b (ffi .cast "const char*" s))
     (while (< i n)
       (let x (write fd (+ b i) (- n i))
         (inc i x)))))
