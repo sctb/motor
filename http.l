@@ -16,20 +16,20 @@
             (clip x (+ n (# sep)))))))
 
 (define begin (s)
-  (let ((m p v) (words (stream.line s sep)))
+  (let ((m p v) (words (stream .line s sep)))
     (list method: m
           path: p
           version: v)))
 
 (define headers (s)
   (with x ()
-    (let b (stream.line s sep2)
+    (let b (stream .line s sep2)
       (each l (split b sep)
         (let ((k v) (cleave l ": "))
           (set (get x k) v))))))
 
 (define body (s n)
-  (stream.take s n))
+  (stream .take s n))
 
 (define response (data code)
   (cat "HTTP/1.1 " code sep
@@ -37,19 +37,19 @@
        data))
 
 (define respond (s data)
-  (stream.emit s (response data "200 OK")))
+  (stream .emit s (response data "200 OK")))
 
 (define problem (s data)
-  (stream.emit s (response data "500 Internal Server Error")))
+  (stream .emit s (response data "500 Internal Server Error")))
 
 (define unknown (s)
-  (stream.emit s (response "Unknown" "404 Not Found")))
+  (stream .emit s (response "Unknown" "404 Not Found")))
 
 (define serve (port f)
   (define connect (fd)
-    (f (stream.create fd)))
-  (motor.listen port connect)
-  (motor.start))
+    (f (stream .create fd)))
+  (motor .listen port connect)
+  (motor (.start)))
 
 (export begin
         headers
