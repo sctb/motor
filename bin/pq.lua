@@ -103,7 +103,7 @@ local function consume(p, fd)
     return abort(p, "consume")
   end
 end
-local function get_rows(res, n, m)
+local function getRows(res, n, m)
   local __rs = {}
   local __i = 0
   while __i < n do
@@ -138,7 +138,7 @@ local function result(r)
       local __m = pq.PQnfields(r)
       local ____x4 = {}
       ____x4.command = cstr(pq.PQcmdStatus(r))
-      ____x4.rows = get_rows(r, __n, __m)
+      ____x4.rows = getRows(r, __n, __m)
       ____x4.size = __n
       return ____x4
     else
@@ -151,7 +151,7 @@ end
 local function clear(r)
   return pq.PQclear(r)
 end
-local function send_query(p, fd, q)
+local function sendQuery(p, fd, q)
   local __x6 = pq.PQsendQuery(p, q)
   if __x6 == 0 then
     abort(p, "query")
@@ -169,7 +169,7 @@ local function send_query(p, fd, q)
     end
   end
 end
-local function get_results(p, fd)
+local function getResults(p, fd)
   local __rs1 = {}
   while true do
     if pq.PQisBusy(p) == 0 then
@@ -187,8 +187,8 @@ local function get_results(p, fd)
 end
 local function query(p, q)
   local __fd1 = pq.PQsocket(p)
-  send_query(p, __fd1, q)
-  local __rs2 = get_results(p, __fd1)
+  sendQuery(p, __fd1, q)
+  local __rs2 = getResults(p, __fd1)
   local __xs = map(result, __rs2)
   map(clear, __rs2)
   return __xs

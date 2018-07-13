@@ -1,10 +1,10 @@
 local ffi = require("ffi")
-local default_size = 4096
+local defaultSize = 4096
 local function allocate(n)
   return ffi["new"]("char[?]", n)
 end
 local function create(n)
-  local __n = n or default_size
+  local __n = n or defaultSize
   local ____x = {}
   ____x.capacity = __n
   ____x.length = 0
@@ -47,4 +47,4 @@ local function string(b, i, n)
     return ""
   end
 end
-return {string = string, space = space, pointer = pointer, length = length, ["full?"] = full63, create = create, extend = extend}
+return {string = string, space = space, full63 = full63, pointer = pointer, length = length, create = create, extend = extend}
